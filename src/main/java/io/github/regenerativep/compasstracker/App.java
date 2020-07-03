@@ -22,7 +22,7 @@ public class App extends JavaPlugin
   {
     targets = new ArrayList<>();
     updateTask = new RegularUpdate(this).runTaskTimer(this, 0, compassUpdateRate);
-    getCommand("ctrack").setExecutor(new CommandListener(this));
+    getCommand("ctr").setExecutor(new CommandListener(this));
   }
   @Override
   public void onDisable()
@@ -37,19 +37,21 @@ public class App extends JavaPlugin
       target.updateListeners();
     }
   }
-  public String createTarget(String playerName)
+  public boolean createTarget(String playerName)
   {
-    if(targetExists(playerName)) return "Target already exists.";
+    if(targetExists(playerName)) return false; //return "Target already exists.";
     PlayerNameCompassTarget target = new PlayerNameCompassTarget(this, playerName);
     if(target.getPlayer() == null)
     {
-      return "Failed to create a target for \"" + playerName + "\".";
+      //return "Failed to create a target for \"" + playerName + "\".";
+      return false;
     }
     getServer().getPluginManager().registerEvents(target, this);
     targets.add(target);
-    return "Created a target for \"" + target.getPlayer().getName() + "\".";
+    //return "Created a target for \"" + target.getPlayer().getName() + "\".";
+    return true;
   }
-  public String createLocationTarget(Location loc, Player listeningPlayer)
+  public boolean createLocationTarget(Location loc, Player listeningPlayer)
   {
     CompassTarget target = new CompassTarget(this);
     target.targetLocation = loc;
@@ -57,9 +59,10 @@ public class App extends JavaPlugin
     getServer().getPluginManager().registerEvents(playerListener, this);
     target.listeners.add(playerListener);
     targets.add(target);
-    return "Created a target for location xz: " + loc.getX() + ", " + loc.getZ() + " .";
+    //return "Created a target for location xz: " + loc.getX() + ", " + loc.getZ() + " .";
+    return true;
   }
-  public String addPlayerListener(Player player, String targetPlayerName)
+  public boolean addPlayerListener(Player player, String targetPlayerName)
   {
     PlayerListener listener = new PlayerListener(player);
     boolean foundTarget = false;
@@ -79,9 +82,11 @@ public class App extends JavaPlugin
     if(foundTarget)
     {
       getServer().getPluginManager().registerEvents(listener, this);
-      return "Added \"" + player.getName() + "\" to listens of target.";
+      //return "Added \"" + player.getName() + "\" to listens of target.";
+      return true;
     }
-    return "Could not find target under the name of \"" + targetPlayerName + "\".";
+    //return "Could not find target under the name of \"" + targetPlayerName + "\".";
+    return false;
   }
   public boolean targetExists(String playerName)
   {
@@ -167,5 +172,20 @@ public class App extends JavaPlugin
       }
     }
     return false;
+  }
+  public PlayerNameCompassTarget getTarget(String playerName)
+  {
+    for(CompassTarget target : targets)
+    {
+      if(target instanceof PlayerNameCompassTarget)
+      {
+        PlayerNameCompassTarget nameTarget = (PlayerNameCompassTarget)target;
+        if(nameTarget.getName().equals(playerName))
+        {
+          return nameTarget;
+        }
+      }
+    }
+    return null;
   }
 }

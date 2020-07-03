@@ -7,7 +7,7 @@ api-version: 1.16
 commands:
   ctrack:
     description: does things related to the compass tracker
-    usage: "Usage: /ctrack [listen | remove | target | stop] [args]"
+    usage: "Usage: /ctr [listen | remove | target | stop] [args]"
 permissions:
   ctrack.addlistener:
     description: Can add someone as a listener to a target

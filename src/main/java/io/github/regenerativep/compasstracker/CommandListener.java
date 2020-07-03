@@ -291,6 +291,12 @@ public class CommandListener implements CommandExecutor
       errorCannotFindTarget(sender, targetName);
       return false;
     }
+    //we must remove compasses of the listening players
+    PlayerNameCompassTarget target = app.getTarget(targetName);
+    for(PlayerListener playerListener : target.listeners)
+    {
+      app.removeCompass(playerListener.getPlayer());
+    }
     app.removeTarget(targetName);
     return true;
   }
