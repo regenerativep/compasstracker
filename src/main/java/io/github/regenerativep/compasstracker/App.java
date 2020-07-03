@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -96,8 +99,9 @@ public class App extends JavaPlugin
     }
     return false;
   }
-  public String removePlayer(Player player)
+  public boolean removePlayer(Player player)
   {
+    boolean foundPlayer = false;
     for(int i = targets.size() - 1; i >= 0; i--)
     {
       CompassTarget target = targets.get(i);
@@ -109,6 +113,7 @@ public class App extends JavaPlugin
         {
           //remove the player listener
           target.listeners.remove(j);
+          foundPlayer = true;
         }
       }
       if(target instanceof CompassTarget && !(target instanceof PlayerNameCompassTarget) && target.listeners.size() == 0)
@@ -116,9 +121,10 @@ public class App extends JavaPlugin
         targets.remove(i);
       }
     }
-    return "Player \"" + player.getName() + "\" has been removed from listeners.";
+    //return "Player \"" + player.getName() + "\" has been removed from listeners.";
+    return foundPlayer;
   }
-  public String removeTarget(String playerName)
+  public boolean removeTarget(String playerName)
   {
     boolean foundTarget = false;
     for(int i = targets.size() - 1; i >= 0; i--)
@@ -134,10 +140,32 @@ public class App extends JavaPlugin
         }
       }
     }
-    if(foundTarget)
+    // if(foundTarget)
+    // {
+    //   return "Removed \"" + playerName + "\"";
+    // }
+    // return "Failed to find target with name \"" + playerName + "\"";
+    return foundTarget;
+  }
+  public boolean removeCompass(Player player)
+  {
+    Inventory inv = player.getInventory();
+    for(ItemStack stack : inv)
     {
-      return "Removed \"" + playerName + "\"";
+      if(stack.getType() == Material.COMPASS)
+      {
+        int amount = stack.getAmount();
+        if(amount <= 1)
+        {
+          inv.remove(stack);
+        }
+        else
+        {
+          stack.setAmount(amount - 1);
+        }
+        return true;
+      }
     }
-    return "Failed to find target with name \"" + playerName + "\"";
+    return false;
   }
 }
