@@ -9,6 +9,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import io.github.regenerativep.commandmanager.CommandArgumentType;
+import io.github.regenerativep.commandmanager.CommandFunction;
+import io.github.regenerativep.commandmanager.CommandManager;
+
 public class CommandListener implements CommandExecutor
 {
   public final String PERM_ADD_LISTENER_ANY = "ctrack.addlistener";
@@ -24,14 +28,14 @@ public class CommandListener implements CommandExecutor
   public final String CANNOT_FIND_TARGET = "Could not find target by the name of \"**name**\". Do you need to create a target?";
   public final String NO_PERMISSION = "Insufficient permissions.";
   public final String TARGET_ALREADY_EXISTS = "Target \"**name**\" already exists.";
+
   private App app;
+  private CommandManager cmdManager;
+
   public CommandListener(App app)
   {
     this.app = app;
-  }
-  @Override
-  public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
-  {
+    cmdManager = new CommandManager();
     /*
     listen
       [x] [z]
@@ -47,78 +51,225 @@ public class CommandListener implements CommandExecutor
       // (1)
       player (2)
     stop
+      //
       player (2)
     */
-    if(args.length < 1) return false;
-    boolean senderIsPlayer = sender instanceof Player;
-    if(args[0].equals("listen"))
-    {
-      if(args.length >= 3 && isNumber(args[1]) && isNumber(args[2]))
+    cmdManager.registerCommand(
+      new Object[] { "listen" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.INTEGER,
+        CommandArgumentType.INTEGER
+      },
+      new CommandFunction()
       {
-        int x = Integer.parseInt(args[1]);
-        int z = Integer.parseInt(args[2]);
-        String listenerName = "";
-        if(args.length >= 4 && args[3].length() > 0)
-        {
-          listenerName = args[3];
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryListen((int)args[1], (int)args[2], sender, "");
         }
-        tryListen(x, z, sender, listenerName);
       }
-      else if(args.length >= 2)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "listen" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.INTEGER,
+        CommandArgumentType.INTEGER,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        String listenerName = "";
-        if(args.length >= 3 && args[2].length() > 0)
-        {
-          listenerName = args[2];
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryListen((int)args[1], (int)args[2], sender, (String)args[3]);
         }
-        String targetName = args[1];
-        tryListen(targetName, sender, listenerName);
       }
-      else
+    );
+    cmdManager.registerCommand(
+      new Object[] { "listen" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        return false;
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryListen((String)args[1], sender, "");
+        }
       }
-    }
-    else if(args[0].equals("remove"))
-    {
-      String listenerName = "";
-      if(args.length >= 2 && args[1].length() > 0)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "listen" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        listenerName = args[1];
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryListen((String)args[1], sender, (String)args[2]);
+        }
       }
-      else if(!senderIsPlayer)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "remove" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        return false;
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryRemove(sender, "");
+        }
       }
-      tryRemove(sender, listenerName);
-    }
-    else if(args[0].equals("target"))
-    {
-      String targetName = "";
-      if(args.length >= 2 && args[1].length() > 0)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "remove" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        targetName = args[1];
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryRemove(sender, (String)args[1]);
+        }
       }
-      else if(!senderIsPlayer)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "target" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        return false;
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryTarget(sender, "");
+        }
       }
-      tryTarget(sender, targetName);
-    }
-    else if(args[0].equals("stop"))
-    {
-      String targetName = "";
-      if(args.length >= 2 && args[1].length() > 0)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "target" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        targetName = args[1];
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryTarget(sender, (String)args[1]);
+        }
       }
-      else if(!senderIsPlayer)
+    );
+    cmdManager.registerCommand(
+      new Object[] { "stop" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
       {
-        return false;
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryStop(sender, "");
+        }
       }
-      tryStop(sender, targetName);
-    }
-    return true;
+    );
+    cmdManager.registerCommand(
+      new Object[] { "stop" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryStop(sender, (String)args[1]);
+        }
+      }
+    );
+  }
+  @Override
+  public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
+  {
+    return cmdManager.inputCommand(sender, args);
+    // if(args.length < 1) return false;
+    // boolean senderIsPlayer = sender instanceof Player;
+    // if(args[0].equals("listen"))
+    // {
+    //   if(args.length >= 3 && isNumber(args[1]) && isNumber(args[2]))
+    //   {
+    //     int x = Integer.parseInt(args[1]);
+    //     int z = Integer.parseInt(args[2]);
+    //     String listenerName = "";
+    //     if(args.length >= 4 && args[3].length() > 0)
+    //     {
+    //       listenerName = args[3];
+    //     }
+    //     tryListen(x, z, sender, listenerName);
+    //   }
+    //   else if(args.length >= 2)
+    //   {
+    //     String listenerName = "";
+    //     if(args.length >= 3 && args[2].length() > 0)
+    //     {
+    //       listenerName = args[2];
+    //     }
+    //     String targetName = args[1];
+    //     tryListen(targetName, sender, listenerName);
+    //   }
+    //   else
+    //   {
+    //     return false;
+    //   }
+    // }
+    // else if(args[0].equals("remove"))
+    // {
+    //   String listenerName = "";
+    //   if(args.length >= 2 && args[1].length() > 0)
+    //   {
+    //     listenerName = args[1];
+    //   }
+    //   else if(!senderIsPlayer)
+    //   {
+    //     return false;
+    //   }
+    //   tryRemove(sender, listenerName);
+    // }
+    // else if(args[0].equals("target"))
+    // {
+    //   String targetName = "";
+    //   if(args.length >= 2 && args[1].length() > 0)
+    //   {
+    //     targetName = args[1];
+    //   }
+    //   else if(!senderIsPlayer)
+    //   {
+    //     return false;
+    //   }
+    //   tryTarget(sender, targetName);
+    // }
+    // else if(args[0].equals("stop"))
+    // {
+    //   String targetName = "";
+    //   if(args.length >= 2 && args[1].length() > 0)
+    //   {
+    //     targetName = args[1];
+    //   }
+    //   else if(!senderIsPlayer)
+    //   {
+    //     return false;
+    //   }
+    //   tryStop(sender, targetName);
+    // }
+    // return true;
   }
   public void errorNotAPlayer(CommandSender sender)
   {
