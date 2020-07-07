@@ -5,11 +5,18 @@ public class CommandSpecifier
     public Object[] values;
     public CommandArgumentType[] argTypes;
     public CommandFunction func;
-    public CommandSpecifier(Object[] values, CommandArgumentType[] args, CommandFunction func)
+    public String[] requiredPermissions;
+    public CommandManager manager;
+    public CommandSpecifier(Object[] values, CommandArgumentType[] args, CommandFunction func, String[] perms)
     {
         this.values = values;
         argTypes = args;
         this.func = func;
+        requiredPermissions = perms;
+    }
+    public CommandSpecifier(Object[] values, CommandArgumentType[] args, CommandFunction func)
+    {
+        this(values, args, func, new String[] {} );
     }
     public boolean fits(String[] testValues)
     {
@@ -20,7 +27,7 @@ public class CommandSpecifier
         {
             String testValue = testValues[i];
             CommandArgumentType argType = argTypes[i];
-            if(!CommandManager.testValue(testValue, argType)) //todo: can store this value for later so that we dont have to recalculate it
+            if(!manager.testValue(testValue, argType)) //todo: can store this value for later so that we dont have to recalculate it
             {
                 return false;
             }
@@ -30,7 +37,7 @@ public class CommandSpecifier
         {
             String testValue = testValues[i];
             CommandArgumentType argType = argTypes[i];
-            Object testValueObj = CommandManager.getValue(testValue, argType);
+            Object testValueObj = manager.getValue(testValue, argType);
             Object correctValue = values[i];
             if(!testValueObj.equals(correctValue))
             {

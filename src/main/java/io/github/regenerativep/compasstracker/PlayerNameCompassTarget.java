@@ -38,4 +38,9 @@ public class PlayerNameCompassTarget extends CompassTarget implements Listener
       }
     }
   }
+  @Override
+  public String getTrackingValue()
+  {
+    return "player \"" + targetPlayerName + "\"";
+  }
 }

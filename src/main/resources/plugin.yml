@@ -1,13 +1,13 @@
 main: io.github.regenerativep.compasstracker.App
 name: CompassTracker
 author: regenerativep
-version: 1.3.0
+version: 1.4.0
 description: Have you compass point to a player or a location.
 api-version: 1.16
 commands:
   ctr:
     description: does things related to the compass tracker
-    usage: "Usage: /ctr [listen | remove | target | stop] [args]"
+    usage: "Usage: /ctr [listen | remove | target | stop | who] [args]"
 permissions:
   ctrack.addlistener:
     description: Can add someone as a listener to a target
@@ -33,4 +33,6 @@ permissions:
   ctrack.removetarget:
     description: Can stop someone from being a target
     default: op
+  ctrack.checktarget:
+    description: Can check what target someone is listening to
   

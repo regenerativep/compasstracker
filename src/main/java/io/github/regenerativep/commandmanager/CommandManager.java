@@ -4,25 +4,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.command.CommandSender;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public class CommandManager
 {
     public static final String[] POSSIBLE_TRUE_BOOLEAN_VALUES = { "true", "t", "on", "enable"};
     public static final String[] POSSIBLE_FALSE_BOOLEAN_VALUES = { "false", "f", "off", "disable"};
-    private List<CommandSpecifier> commands;
-    public CommandManager()
+    public static final String NO_PERMISSION = "Insufficient permissions. (**reason**)";
+
+    private JavaPlugin plugin;
+    public List<CommandSpecifier> commands;
+    public CommandManager(JavaPlugin plugin)
     {
         commands = new ArrayList<CommandSpecifier>();
-    }
-    public void registerCommand(Object[] values, CommandArgumentType[] args, CommandFunction func)
-    {
-        commands.add(new CommandSpecifier(values, args, func));
+        this.plugin = plugin;
     }
     public CommandSpecifier getFitCommand(String[] args)
     {
         for(int i = 0; i < commands.size(); i++)
         {
             CommandSpecifier cmd = commands.get(i);
+            cmd.manager = this;
             if(cmd.fits(args))
             {
                 return cmd;
@@ -32,8 +34,25 @@ public class CommandManager
     }
     public boolean inputCommand(CommandSender sender, String[] args)
     {
+        //get the command
         CommandSpecifier cmd = getFitCommand(args);
+        //make sure we got a command
         if(cmd == null) return false;
+        cmd.manager = this;
+        //check for permissions
+        if(cmd.requiredPermissions != null)
+        {
+            for(int i = 0; i < cmd.requiredPermissions.length; i++)
+            {
+                String perm = cmd.requiredPermissions[i];
+                if(!sender.hasPermission(perm))
+                {
+                    sender.sendMessage(NO_PERMISSION.replace("**reason**", perm));
+                    return false;
+                }
+            }
+        }
+        //convert string arguments into the desired types
         Object[] objArgs = new Object[args.length];
         for(int i = 0; i < objArgs.length; i++)
         {
@@ -41,13 +60,14 @@ public class CommandManager
             if(value == null) return false;
             objArgs[i] = value;
         }
+        //call the command's function and return the result
         return cmd.func.call(sender, objArgs);
     }
-    public static boolean testString(String value)
+    public boolean testString(String value)
     {
         return value.length() > 0;
     }
-    public static boolean testInteger(String value)
+    public boolean testInteger(String value)
     {
         try
         {
@@ -59,7 +79,7 @@ public class CommandManager
         }
         return true;
     }
-    public static boolean testFloat(String value)
+    public boolean testFloat(String value)
     {
         try
         {
@@ -71,7 +91,7 @@ public class CommandManager
         }
         return true;
     }
-    public static boolean testBoolean(String value)
+    public boolean testBoolean(String value)
     {
         for(int i = 0; i < POSSIBLE_TRUE_BOOLEAN_VALUES.length; i++)
         {
@@ -89,7 +109,7 @@ public class CommandManager
         }
         return false;
     }
-    public static boolean testValue(String value, CommandArgumentType type)
+    public boolean testValue(String value, CommandArgumentType type)
     {
         switch(type)
         {
@@ -104,7 +124,7 @@ public class CommandManager
         }
         return false;
     }
-    public static Boolean getValueBoolean(String value)
+    public Boolean getValueBoolean(String value)
     {
         for(int i = 0; i < POSSIBLE_TRUE_BOOLEAN_VALUES.length; i++)
         {
@@ -113,16 +133,9 @@ public class CommandManager
                 return true;
             }
         }
-        // for(int i = 0; i < POSSIBLE_FALSE_BOOLEAN_VALUES.length; i++)
-        // {
-        //     if(value.equals(POSSIBLE_FALSE_BOOLEAN_VALUES[i]))
-        //     {
-        //         return false;
-        //     }
-        // }
         return false;
     }
-    public static Object getValue(String value, CommandArgumentType type)
+    public Object getValue(String value, CommandArgumentType type)
     {
         switch(type)
         {

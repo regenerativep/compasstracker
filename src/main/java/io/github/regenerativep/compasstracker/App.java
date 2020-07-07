@@ -10,10 +10,12 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 public class App extends JavaPlugin
 {
+  public final String COMPASS_TRACKER_COMMMAND = "ctr";
   public final long compassUpdateRate = 20;
   public List<CompassTarget> targets;
   public BukkitTask updateTask;
@@ -21,8 +23,13 @@ public class App extends JavaPlugin
   public void onEnable()
   {
     targets = new ArrayList<>();
-    updateTask = new RegularUpdate(this).runTaskTimer(this, 0, compassUpdateRate);
-    getCommand("ctr").setExecutor(new CommandListener(this));
+    updateTask = new BukkitRunnable() {
+      @Override
+      public void run() {    
+        updateListeners();
+      }
+    }.runTaskTimer(this, 0, compassUpdateRate);
+    getCommand(COMPASS_TRACKER_COMMMAND).setExecutor(new CommandListener(this));
   }
   @Override
   public void onDisable()
@@ -41,31 +48,24 @@ public class App extends JavaPlugin
   {
     if(targetExists(playerName)) return false; //return "Target already exists.";
     PlayerNameCompassTarget target = new PlayerNameCompassTarget(this, playerName);
-    if(target.getPlayer() == null)
-    {
-      //return "Failed to create a target for \"" + playerName + "\".";
-      return false;
-    }
+    if(target.getPlayer() == null) return false;
     getServer().getPluginManager().registerEvents(target, this);
     targets.add(target);
-    //return "Created a target for \"" + target.getPlayer().getName() + "\".";
     return true;
   }
   public boolean createLocationTarget(Location loc, Player listeningPlayer)
   {
     CompassTarget target = new CompassTarget(this);
     target.targetLocation = loc;
-    PlayerListener playerListener = new PlayerListener(listeningPlayer);
+    PlayerListener playerListener = new PlayerListener(this, listeningPlayer);
     getServer().getPluginManager().registerEvents(playerListener, this);
     target.listeners.add(playerListener);
     targets.add(target);
-    //return "Created a target for location xz: " + loc.getX() + ", " + loc.getZ() + " .";
     return true;
   }
   public boolean addPlayerListener(Player player, String targetPlayerName)
   {
-    PlayerListener listener = new PlayerListener(player);
-    boolean foundTarget = false;
+    PlayerListener listener = new PlayerListener(this, player);
     for(int i = targets.size() - 1; i >= 0; i--)
     {
       CompassTarget target = targets.get(i);
@@ -75,17 +75,11 @@ public class App extends JavaPlugin
         if(playerTarget.getName().equals(targetPlayerName))
         {
           target.listeners.add(listener);
-          foundTarget = true;
+          getServer().getPluginManager().registerEvents(listener, this);
+          return true;
         }
       }
     }
-    if(foundTarget)
-    {
-      getServer().getPluginManager().registerEvents(listener, this);
-      //return "Added \"" + player.getName() + "\" to listens of target.";
-      return true;
-    }
-    //return "Could not find target under the name of \"" + targetPlayerName + "\".";
     return false;
   }
   public boolean targetExists(String playerName)
@@ -96,7 +90,8 @@ public class App extends JavaPlugin
       if(target instanceof PlayerNameCompassTarget)
       {
         PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
-        if(playerTarget.getPlayer().getName().equals(playerName))
+        Player player = playerTarget.getPlayer();
+        if(player != null && player.getName() != null && player.getName().equals(playerName))
         {
           return true;
         }
@@ -113,10 +108,10 @@ public class App extends JavaPlugin
       for(int j = target.listeners.size() - 1; j >= 0; j--)
       {
         PlayerListener listener = target.listeners.get(j);
-        HandlerList.unregisterAll(listener);
         if(listener.getPlayer() == player)
         {
           //remove the player listener
+          HandlerList.unregisterAll(listener);
           target.listeners.remove(j);
           foundPlayer = true;
         }
@@ -126,31 +121,26 @@ public class App extends JavaPlugin
         targets.remove(i);
       }
     }
-    //return "Player \"" + player.getName() + "\" has been removed from listeners.";
     return foundPlayer;
   }
   public boolean removeTarget(String playerName)
   {
-    boolean foundTarget = false;
     for(int i = targets.size() - 1; i >= 0; i--)
     {
       CompassTarget target = targets.get(i);
       if(target instanceof PlayerNameCompassTarget)
       {
         PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
-        if(playerTarget.getPlayer().getName().equals(playerName))
+        Player player = playerTarget.getPlayer();
+        if(player != null && player.getName() != null && player.getName().equals(playerName))
         {
+          HandlerList.unregisterAll(playerTarget);
           targets.remove(i);
-          foundTarget = true;
+          return true;
         }
       }
     }
-    // if(foundTarget)
-    // {
-    //   return "Removed \"" + playerName + "\"";
-    // }
-    // return "Failed to find target with name \"" + playerName + "\"";
-    return foundTarget;
+    return false;
   }
   public boolean removeCompass(Player player)
   {
@@ -187,5 +177,61 @@ public class App extends JavaPlugin
       }
     }
     return null;
+  }
+  public PlayerListener getPlayerListener(String playerName)
+  {
+    for(int i = 0; i < targets.size(); i++)
+    {
+      CompassTarget target = targets.get(i);
+      for(int j = 0; j < target.listeners.size(); j++)
+      {
+        PlayerListener listener = target.listeners.get(j);
+        if(listener.getPlayer().getName().equals(playerName))
+        {
+          return listener;
+        }
+      }
+    }
+    return null;
+  }
+  public CompassTarget getListenersTarget(PlayerListener listener)
+  {
+    for(int i = 0; i < targets.size(); i++)
+    {
+      CompassTarget target = targets.get(i);
+      for(int j = 0; j < target.listeners.size(); j++)
+      {
+        PlayerListener testListener = target.listeners.get(j);
+        if(testListener == listener)
+        {
+          return target;
+        }
+      }
+    }
+    return null;
+  }
+  public CompassTarget getNextTarget(CompassTarget target)
+  {
+    int i;
+    for(i = 0; i < targets.size(); i++)
+    {
+      CompassTarget testTarget = targets.get(i);
+      if(testTarget == target)
+      {
+        break;
+      }
+    }
+    int j;
+    CompassTarget nextTarget = target;
+    for(j = 0; j < targets.size(); j++)
+    {
+      int ind = (j + i) % targets.size();
+      CompassTarget testTarget = targets.get(ind);
+      if(testTarget instanceof PlayerNameCompassTarget)
+      {
+        nextTarget = testTarget;
+      }
+    }
+    return nextTarget;
   }
 }

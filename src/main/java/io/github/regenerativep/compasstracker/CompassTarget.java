@@ -33,4 +33,25 @@ public class CompassTarget
       }
     }
   }
+  public void removeListener(PlayerListener listener)
+  {
+    for(int i = listeners.size() - 1; i >= 0; i--)
+    {
+      if(listeners.get(i) == listener)
+      {
+        listeners.remove(i);
+      }
+    }
+  }
+  public String getTrackingValue()
+  {
+    if(targetLocation == null)
+    {
+      return "an undefined position";
+    }
+    else
+    {
+      return "position XZ: " + targetLocation.getBlockX() + ", " + targetLocation.getBlockZ();
+    }
+  }
 }
