@@ -132,7 +132,8 @@ public class PlayerListener implements Listener
       CompassTarget target = getTarget();
       CompassTarget nextTarget = app.getNextTarget(target);
       //move the listener to the new target
-      target.removeListener(this);
+      //target.removeListener(this);
+      target.listeners.remove(this);
       nextTarget.listeners.add(this);
 
       sendTrackingMessage(player);

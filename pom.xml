@@ -6,7 +6,7 @@
 
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
-  <version>1.4.0</version>
+  <version>1.4.1</version>
   <packaging>jar</packaging>
   <name>compasstracker</name>
   <!-- FIXME change it to the project's website -->

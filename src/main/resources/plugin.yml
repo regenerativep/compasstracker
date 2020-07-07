@@ -1,7 +1,7 @@
 main: io.github.regenerativep.compasstracker.App
 name: CompassTracker
 author: regenerativep
-version: 1.4.0
+version: 1.4.1
 description: Have you compass point to a player or a location.
 api-version: 1.16
 commands:

@@ -13,29 +13,53 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+/**
+ * main app for the compass tracker plugin
+ */
 public class App extends JavaPlugin
 {
+  /**
+   * ingame command for the compass tracker
+   */
   public final String COMPASS_TRACKER_COMMMAND = "ctr";
+  /**
+   * tick period between compass updates
+   */
   public final long compassUpdateRate = 20;
+  /**
+   * list of compass targets
+   */
   public List<CompassTarget> targets;
-  public BukkitTask updateTask;
+  /**
+   * compass update loop
+   */
+  private BukkitTask updateTask;
+  /**
+   * called when this compass tracker plugin is enabled
+   */
   @Override
   public void onEnable()
   {
     targets = new ArrayList<>();
     updateTask = new BukkitRunnable() {
       @Override
-      public void run() {    
+      public void run() {
         updateListeners();
       }
     }.runTaskTimer(this, 0, compassUpdateRate);
     getCommand(COMPASS_TRACKER_COMMMAND).setExecutor(new CommandListener(this));
   }
+  /**
+   * called when this compass tracker plugin is disabled
+   */
   @Override
   public void onDisable()
   {
-    //
+    updateTask.cancel();
   }
+  /**
+   * updates all of the listener's compasses
+   */
   public void updateListeners()
   {
     for(int i = 0; i < targets.size(); i++)
@@ -44,16 +68,30 @@ public class App extends JavaPlugin
       target.updateListeners();
     }
   }
+  /**
+   * creates a target to a player
+   * @param playerName the player to target
+   * @return if successful
+   */
   public boolean createTarget(String playerName)
   {
-    if(targetExists(playerName)) return false; //return "Target already exists.";
+    //ensure target doesnt already exist
+    if(targetExists(playerName)) return false;
     PlayerNameCompassTarget target = new PlayerNameCompassTarget(this, playerName);
+    //ensure target player exists
     if(target.getPlayer() == null) return false;
+    //register this target to receive events from the game
     getServer().getPluginManager().registerEvents(target, this);
     targets.add(target);
     return true;
   }
-  public boolean createLocationTarget(Location loc, Player listeningPlayer)
+  /**
+   * creates a target to a specific location
+   * @param loc the location to target
+   * @param listeningPlayer the player that wants to listen
+   * @return if successful
+   */
+  public boolean createLocationTarget(Location loc, Player listeningPlayer) //todo: only take in a location
   {
     CompassTarget target = new CompassTarget(this);
     target.targetLocation = loc;
@@ -63,42 +101,49 @@ public class App extends JavaPlugin
     targets.add(target);
     return true;
   }
+  /**
+   * adds a player as a listener to a player target
+   * @param player the player to add as a listener
+   * @param targetPlayerName the target player's name to add the listener to
+   * @return if successful
+   */
   public boolean addPlayerListener(Player player, String targetPlayerName)
   {
     PlayerListener listener = new PlayerListener(this, player);
-    for(int i = targets.size() - 1; i >= 0; i--)
-    {
-      CompassTarget target = targets.get(i);
-      if(target instanceof PlayerNameCompassTarget)
-      {
-        PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
-        if(playerTarget.getName().equals(targetPlayerName))
-        {
-          target.listeners.add(listener);
-          getServer().getPluginManager().registerEvents(listener, this);
-          return true;
-        }
-      }
-    }
-    return false;
+    PlayerNameCompassTarget target = getTarget(targetPlayerName);
+    if(target == null) return false;
+    target.listeners.add(listener);
+    getServer().getPluginManager().registerEvents(listener, this);
+    return true;
   }
+  /**
+   * checks if a target with the given player name exists
+   * @param playerName name of the target to check for
+   * @return if the target exists
+   */
   public boolean targetExists(String playerName)
   {
-    for(int i = targets.size() - 1; i >= 0; i--)
-    {
-      CompassTarget target = targets.get(i);
-      if(target instanceof PlayerNameCompassTarget)
-      {
-        PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
-        Player player = playerTarget.getPlayer();
-        if(player != null && player.getName() != null && player.getName().equals(playerName))
-        {
-          return true;
-        }
-      }
-    }
-    return false;
+    return getTarget(playerName) != null;
+    // for(int i = targets.size() - 1; i >= 0; i--)
+    // {
+    //   CompassTarget target = targets.get(i);
+    //   if(target instanceof PlayerNameCompassTarget)
+    //   {
+    //     PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
+    //     Player player = playerTarget.getPlayer();
+    //     if(player != null && player.getName() != null && player.getName().equals(playerName))
+    //     {
+    //       return true;
+    //     }
+    //   }
+    // }
+    // return false;
   }
+  /**
+   * removes a player's listener from the targets
+   * @param player the player to remove
+   * @return if the player was found
+   */
   public boolean removePlayer(Player player)
   {
     boolean foundPlayer = false;
@@ -116,6 +161,7 @@ public class App extends JavaPlugin
           foundPlayer = true;
         }
       }
+      //remove location target if nobody is listening to it because no new listeners can be added to it
       if(target instanceof CompassTarget && !(target instanceof PlayerNameCompassTarget) && target.listeners.size() == 0)
       {
         targets.remove(i);
@@ -123,25 +169,47 @@ public class App extends JavaPlugin
     }
     return foundPlayer;
   }
+  /**
+   * removes a target given the targeted player's name
+   * @param playerName the target's name
+   * @return if the target was found
+   */
   public boolean removeTarget(String playerName)
   {
-    for(int i = targets.size() - 1; i >= 0; i--)
+    PlayerNameCompassTarget target = getTarget(playerName);
+    if(target == null) return false;
+    HandlerList.unregisterAll(target);
+    //we're not moving the target's listeners anywhere, so we can just unregister them
+    for(int i = 0; i < target.listeners.size(); i++)
     {
-      CompassTarget target = targets.get(i);
-      if(target instanceof PlayerNameCompassTarget)
-      {
-        PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
-        Player player = playerTarget.getPlayer();
-        if(player != null && player.getName() != null && player.getName().equals(playerName))
-        {
-          HandlerList.unregisterAll(playerTarget);
-          targets.remove(i);
-          return true;
-        }
-      }
+      HandlerList.unregisterAll(target.listeners.get(i));
     }
-    return false;
+    target.listeners.clear();
+    targets.remove(target);
+    return true;
+
+    // for(int i = targets.size() - 1; i >= 0; i--)
+    // {
+    //   CompassTarget target = targets.get(i);
+    //   if(target instanceof PlayerNameCompassTarget)
+    //   {
+    //     PlayerNameCompassTarget playerTarget = (PlayerNameCompassTarget)target;
+    //     Player player = playerTarget.getPlayer();
+    //     if(player != null && player.getName() != null && player.getName().equals(playerName))
+    //     {
+    //       HandlerList.unregisterAll(playerTarget);
+    //       targets.remove(i);
+    //       return true;
+    //     }
+    //   }
+    // }
+    // return false;
   }
+  /**
+   * takes a compass away from the given player if they have one
+   * @param player the player to take from
+   * @return if the player had a compass to remove
+   */
   public boolean removeCompass(Player player)
   {
     Inventory inv = player.getInventory();
@@ -163,6 +231,11 @@ public class App extends JavaPlugin
     }
     return false;
   }
+  /**
+   * gets a target from the given player name
+   * @param playerName the target's player name
+   * @return the compass target; null if not found
+   */
   public PlayerNameCompassTarget getTarget(String playerName)
   {
     for(CompassTarget target : targets)
@@ -178,6 +251,11 @@ public class App extends JavaPlugin
     }
     return null;
   }
+  /**
+   * gets the player listener from a playername
+   * @param playerName the listener's name
+   * @return the player listener; null if not found
+   */
   public PlayerListener getPlayerListener(String playerName)
   {
     for(int i = 0; i < targets.size(); i++)
@@ -194,6 +272,11 @@ public class App extends JavaPlugin
     }
     return null;
   }
+  /**
+   * gets the target of a listener (todo: slow)
+   * @param listener the listener
+   * @return listener's compass target; null if not found
+   */
   public CompassTarget getListenersTarget(PlayerListener listener)
   {
     for(int i = 0; i < targets.size(); i++)
@@ -210,26 +293,33 @@ public class App extends JavaPlugin
     }
     return null;
   }
-  public CompassTarget getNextTarget(CompassTarget target)
+  /**
+   * gets the next player name compass target after the given
+   * @param target the current target
+   * @return the next player name compass target in the list; null if not found
+   */
+  public PlayerNameCompassTarget getNextTarget(CompassTarget target)
   {
-    int i;
-    for(i = 0; i < targets.size(); i++)
+    int i = 0;
+    if(target != null)
     {
-      CompassTarget testTarget = targets.get(i);
-      if(testTarget == target)
+      for(; i < targets.size(); i++)
       {
-        break;
+        CompassTarget testTarget = targets.get(i);
+        if(testTarget == target)
+        {
+          break;
+        }
       }
     }
-    int j;
-    CompassTarget nextTarget = target;
-    for(j = 0; j < targets.size(); j++)
+    PlayerNameCompassTarget nextTarget = null;
+    for(int j = 0; j < targets.size(); j++)
     {
       int ind = (j + i) % targets.size();
       CompassTarget testTarget = targets.get(ind);
       if(testTarget instanceof PlayerNameCompassTarget)
       {
-        nextTarget = testTarget;
+        nextTarget = (PlayerNameCompassTarget)testTarget;
       }
     }
     return nextTarget;
