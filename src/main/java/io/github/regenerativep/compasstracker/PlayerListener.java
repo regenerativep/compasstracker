@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,44 +12,123 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 
-public class PlayerListener implements Listener
+public class PlayerListener implements ILocatable
 {
   public static final String TRACKING_INFO = "Tracking ";
+
+  public ILocatable target;
+
   private App app;
   private Player listeningPlayer;
   private boolean keepCompass;
   private boolean keptInventory;
+  private boolean receivedCompass;
+  private Location lastLocation;
+
   public PlayerListener(App app, Player player)
   {
     listeningPlayer = player;
+    receivedCompass = false;
     keepCompass = true;
     keptInventory = false;
+    target = null;
+    lastLocation = null;
     this.app = app;
   }
-  public void updateTarget(Location loc)
+  public void update()
+  {
+    if(target != null && listeningPlayer != null)
+    {
+      listeningPlayer.setCompassTarget(target.getLocation());
+    }
+  }
+  public void resetCompassTarget()
   {
     if(listeningPlayer != null)
     {
-      listeningPlayer.setCompassTarget(loc);
+      listeningPlayer.setCompassTarget(listeningPlayer.getWorld().getSpawnLocation());
     }
   }
-  @EventHandler
+  public boolean removeCompass()
+  {
+    if(!receivedCompass || listeningPlayer == null) return false;
+    Inventory inv = listeningPlayer.getInventory();
+    for(ItemStack stack : inv)
+    {
+      if(stack.getType() == Material.COMPASS)
+      {
+        int amount = stack.getAmount();
+        if(amount <= 1)
+        {
+          inv.remove(stack);
+        }
+        else
+        {
+          stack.setAmount(amount - 1);
+        }
+        receivedCompass = false;
+        return true;
+      }
+    }
+    return false;
+  }
+  public boolean giveCompass()
+  {
+    if(receivedCompass || listeningPlayer == null) return false;
+    Inventory inv = listeningPlayer.getInventory();
+    if(inv.contains(Material.COMPASS)) return false;
+    ItemStack item = new ItemStack(Material.COMPASS);
+    inv.addItem(item);
+    receivedCompass = true;
+    return true;
+  }
+  public Player getPlayer()
+  {
+    return listeningPlayer;
+  }
+  @Override
+  public String getName()
+  {
+    if(listeningPlayer == null) return "";
+    return listeningPlayer.getName();
+  }
+  public ILocatable getTarget()
+  {
+    return target;
+  }
+
+  @Override
+  public Location getLocation()
+  {
+    return lastLocation;
+  }
+
+  @Override
+  public String getLocationDescription()
+  {
+    if(listeningPlayer == null) return "nothing";
+    return "player \"" + listeningPlayer.getName() + "\"";
+  }
+  public void setTarget(ILocatable target)
+  {
+    this.target = target;
+    sendTrackingMessage();
+  }
   public void onPlayerDeath(PlayerDeathEvent event)
   {
-    Player player = event.getEntity();
-    if(!player.getName().equals(listeningPlayer.getName())) return;
-    listeningPlayer = player;
     if(keepCompass && !event.getKeepInventory())
     {
-      //if player has a compass, get rid of it
+      //if player has a compass in their drops, get rid of it
       List<ItemStack> drops = event.getDrops();
       for(int i = drops.size() - 1; i >= 0; i--)
       {
@@ -66,30 +146,20 @@ public class PlayerListener implements Listener
       keptInventory = true;
     }
   }
-  @EventHandler
   public void onPlayerRespawn(PlayerRespawnEvent event)
   {
-    Player player = event.getPlayer();
-    if(!player.getName().equals(listeningPlayer.getName())) return;
-    listeningPlayer = player;
     if(keepCompass && !keptInventory)
     {
-      //give the player a compass
-      ItemStack item = new ItemStack(Material.COMPASS);
-      player.getInventory().addItem(item);
+      giveCompass();
     }
   }
-  @EventHandler
   public void onPlayerQuit(PlayerQuitEvent event)
   {
-    Player player = event.getPlayer();
-    if(!player.getName().equals(listeningPlayer.getName())) return;
-    listeningPlayer = player;
-    app.removePlayer(listeningPlayer);
+    app.unlisten(getName());
   }
-  public void sendTrackingMessage(Player player)
+  public void sendTrackingMessage()
   {
-    CompassTarget target = getTarget();
+    if(listeningPlayer == null) return;
     String targetMessage;
     if(target == null)
     {
@@ -97,7 +167,7 @@ public class PlayerListener implements Listener
     }
     else
     {
-      targetMessage = target.getTrackingValue();
+      targetMessage = target.getLocationDescription();
     }
     //display tracking information
     TextComponent message = new TextComponent(TRACKING_INFO);
@@ -105,46 +175,42 @@ public class PlayerListener implements Listener
     TextComponent infoMessage = new TextComponent(targetMessage);
     infoMessage.setColor(ChatColor.WHITE);
     message.addExtra(infoMessage);
-    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, message);
+    listeningPlayer.spigot().sendMessage(ChatMessageType.ACTION_BAR, message);
   }
-  @EventHandler
   public void onPlayerItemHeld(PlayerItemHeldEvent event)
   {
-    Player player = event.getPlayer();
-    if(!player.getName().equals(listeningPlayer.getName())) return;
-    listeningPlayer = player;
-    ItemStack heldItem = player.getInventory().getItem(event.getNewSlot());
+    ItemStack heldItem = listeningPlayer.getInventory().getItem(event.getNewSlot());
     if(heldItem != null && heldItem.getType() == Material.COMPASS)
     {
-      sendTrackingMessage(player);
+      sendTrackingMessage();
     }
   }
-  @EventHandler
   public void onPlayerInteract(PlayerInteractEvent event)
   {
-    Player player = event.getPlayer();
-    if(!player.getName().equals(listeningPlayer.getName())) return;
-    listeningPlayer = player;
     if(event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
     ItemStack item = event.getItem();
     if(item != null && item.getType() == Material.COMPASS)
     {
-      CompassTarget target = getTarget();
-      CompassTarget nextTarget = app.getNextTarget(target);
-      //move the listener to the new target
-      //target.removeListener(this);
-      target.listeners.remove(this);
-      nextTarget.listeners.add(this);
-
-      sendTrackingMessage(player);
+      String targetName;
+      if(target == null)
+      {
+        targetName = null;
+      }
+      else
+      {
+        targetName = target.getName();
+      }
+      setTarget(app.getNextTarget(targetName));
     }
   }
-  public Player getPlayer()
+  public void onPlayerMove(PlayerMoveEvent event)
   {
-    return listeningPlayer;
-  }
-  public CompassTarget getTarget()
-  {
-    return app.getListenersTarget(this);
+    if(listeningPlayer == null) return;
+    Location playerLocation = listeningPlayer.getLocation();
+    //only update if player is in overworld
+    if(playerLocation.getWorld().getEnvironment() == World.Environment.NORMAL)
+    {
+      lastLocation = playerLocation;
+    }
   }
 }

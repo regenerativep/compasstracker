@@ -83,6 +83,11 @@ public class CommandListener implements CommandExecutor
    * message for when the sender is listening to a target and to what target
    */
   public final String LISTENING_TO = "You are listening to **name**.";
+  /**
+   * message for when the sender is not listening to a target
+   */
+  public final String NO_TARGET = "You are not listening to a target.";
+  public final String AUTOLISTEN_STATUS = "Autolistener is **status**.";
 
   /**
    * a reference to the main application
@@ -101,23 +106,28 @@ public class CommandListener implements CommandExecutor
     this.app = app;
     cmdManager = new CommandManager(app);
     /*
-    listen
-      [x] [z]
-        // (3)
-        [player] (4)
-      [player]
-        // (2)
-        [player] (3)
-    remove
-      // (1)
-      player (2)
-    target
-      // (1)
-      player (2)
-    stop
-      //
-      player (2)
+    listen { ([x: int] [z: int] | [player]) { [player] } }
+    unlisten { [player] }
+    relisten { [player] }
+    autolisten { [boolean] }
+    target { [player] }
+    removetarget { [player] }
+    who { [player} }
     */
+    cmdManager.commands.add(new CommandSpecifier( //ctr listen
+      new Object[] { "listen" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryListen(sender, "");
+        }
+      },
+      new String[] { PERM_ADD_TARGET_LOCATION }
+    ));
     cmdManager.commands.add(new CommandSpecifier( //ctr listen [x] [z]
       new Object[] { "listen" },
       new CommandArgumentType[] {
@@ -183,7 +193,7 @@ public class CommandListener implements CommandExecutor
       new String[] { PERM_ADD_LISTENER_ANY }
     ));
     cmdManager.commands.add(new CommandSpecifier( //ctr remove
-      new Object[] { "remove" },
+      new Object[] { "unlisten" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING
       },
@@ -191,13 +201,13 @@ public class CommandListener implements CommandExecutor
       {
         @Override
         public boolean call(CommandSender sender, Object[] args) {
-          return tryRemove(sender, "");
+          return tryUnlisten(sender, "");
         }
       },
       new String[] { PERM_ADD_LISTENER_SELF }
     ));
     cmdManager.commands.add(new CommandSpecifier( //ctr remove [listener name]
-      new Object[] { "remove" },
+      new Object[] { "unlisten" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING,
         CommandArgumentType.STRING
@@ -206,7 +216,65 @@ public class CommandListener implements CommandExecutor
       {
         @Override
         public boolean call(CommandSender sender, Object[] args) {
-          return tryRemove(sender, (String)args[1]);
+          return tryUnlisten(sender, (String)args[1]);
+        }
+      },
+      new String[] { PERM_ADD_LISTENER_ANY }
+    ));
+    cmdManager.commands.add(new CommandSpecifier( //ctr remove
+      new Object[] { "relisten" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryRelisten(sender, "");
+        }
+      },
+      new String[] { PERM_ADD_LISTENER_SELF }
+    ));
+    cmdManager.commands.add(new CommandSpecifier( //ctr remove [listener name]
+      new Object[] { "relisten" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryRelisten(sender, (String)args[1]);
+        }
+      },
+      new String[] { PERM_ADD_LISTENER_ANY }
+    ));
+    cmdManager.commands.add(new CommandSpecifier( //ctr autolisten
+      new Object[] { "autolisten" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryAutoListen(sender);
+        }
+      },
+      new String[] { PERM_ADD_LISTENER_ANY }
+    ));
+    cmdManager.commands.add(new CommandSpecifier( //ctr autolisten [boolean]
+      new Object[] { "autolisten" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING,
+        CommandArgumentType.BOOLEAN
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          return tryAutoListen(sender, (boolean)args[1]);
         }
       },
       new String[] { PERM_ADD_LISTENER_ANY }
@@ -241,7 +309,7 @@ public class CommandListener implements CommandExecutor
       new String[] { PERM_ADD_TARGET_ANY }
     ));
     cmdManager.commands.add(new CommandSpecifier( //ctr stop
-      new Object[] { "stop" },
+      new Object[] { "removetarget" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING
       },
@@ -249,13 +317,13 @@ public class CommandListener implements CommandExecutor
       {
         @Override
         public boolean call(CommandSender sender, Object[] args) {
-          return tryStop(sender, "");
+          return tryRemoveTarget(sender, "");
         }
       },
       new String[] { PERM_REMOVE_TARGET }
     ));
     cmdManager.commands.add(new CommandSpecifier( //ctr stop [target name]
-      new Object[] { "stop" },
+      new Object[] { "removetarget" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING,
         CommandArgumentType.STRING
@@ -264,7 +332,7 @@ public class CommandListener implements CommandExecutor
       {
         @Override
         public boolean call(CommandSender sender, Object[] args) {
-          return tryStop(sender, (String)args[1]);
+          return tryRemoveTarget(sender, (String)args[1]);
         }
       },
       new String[] { PERM_REMOVE_TARGET }
@@ -380,23 +448,6 @@ public class CommandListener implements CommandExecutor
     return player;
   }
   /**
-   * check if player already has compass, and gives them one if they do not
-   * @param player player to give compass to
-   */
-  public void checkAndGiveCompass(Player player)
-  {
-    boolean foundPlayer = app.removePlayer(player);
-    if(!foundPlayer)
-    {
-      //the player might not have a compass, check and give one
-      Inventory inv = player.getInventory();
-      if(!inv.contains(Material.COMPASS))
-      {
-        inv.addItem(new ItemStack(Material.COMPASS));
-      }
-    }
-  }
-  /**
    * tries to listen given inputs
    * @param x x position
    * @param z z position
@@ -406,11 +457,11 @@ public class CommandListener implements CommandExecutor
    */
   public boolean tryListen(int x, int z, CommandSender sender, String listenerName)
   {
-    Player playerToListen = getPlayerFromName(sender, listenerName);
-    if(playerToListen == null) return false;
-    Location loc = new Location(playerToListen.getWorld(), x, playerToListen.getLocation().getY(), z);
-    checkAndGiveCompass(playerToListen);
-    app.createLocationTarget(loc, playerToListen);
+    Player player = getPlayerFromName(sender, listenerName);
+    if(player == null) return false;
+    Location loc = new Location(player.getWorld(), x, player.getLocation().getY(), z);
+    app.listen(player);
+    app.setListenerTarget(player.getName(), loc);
     return true;
   }
   /**
@@ -422,16 +473,16 @@ public class CommandListener implements CommandExecutor
    */
   public boolean tryListen(String targetName, CommandSender sender, String listenerName)
   {
-    Player playerToListen = getPlayerFromName(sender, listenerName);
-    if(playerToListen == null) return false;
+    Player player = getPlayerFromName(sender, listenerName);
+    if(player == null) return false;
     boolean targetExists = app.targetExists(targetName);
     if(!targetExists)
     {
       errorCannotFindTarget(sender, targetName);
       return false;
     }
-    checkAndGiveCompass(playerToListen);
-    app.addPlayerListener(playerToListen, targetName);
+    app.listen(player);
+    app.setListenerTarget(player.getName(), targetName);
     return true;
   }
   /**
@@ -440,15 +491,26 @@ public class CommandListener implements CommandExecutor
    * @param listenerName name of listener
    * @return if successful
    */
-  public boolean tryRemove(CommandSender sender, String listenerName)
+  public boolean tryRelisten(CommandSender sender, String listenerName)
   {
-    Player playerToRemove = getPlayerFromName(sender, listenerName);
-    if(playerToRemove == null) return false;
-    if(app.removePlayer(playerToRemove))
-    {
-      //check for a compass and remove it
-      app.removeCompass(playerToRemove);
-    }
+    Player player = getPlayerFromName(sender, listenerName);
+    if(player == null) return false;
+    app.unlisten(player.getName());
+    app.listen(player);
+    return true;
+  }
+  public boolean tryListen(CommandSender sender, String listenerName)
+  {
+    Player player = getPlayerFromName(sender, listenerName);
+    if(player == null) return false;
+    app.listen(player);
+    return true;
+  }
+  public boolean tryUnlisten(CommandSender sender, String listenerName)
+  {
+    Player player = getPlayerFromName(sender, listenerName);
+    if(player == null) return false;
+    app.unlisten(player.getName());
     return true;
   }
   /**
@@ -467,7 +529,7 @@ public class CommandListener implements CommandExecutor
       errorTargetAlreadyExists(sender, targetName);
       return false;
     }
-    app.createTarget(targetName);
+    app.addTarget(targetName);
     return true;
   }
   /**
@@ -476,7 +538,7 @@ public class CommandListener implements CommandExecutor
    * @param listenerName name of listener
    * @return if successful
    */
-  public boolean tryStop(CommandSender sender, String targetName)
+  public boolean tryRemoveTarget(CommandSender sender, String targetName)
   {
     Player targetPlayer = getPlayerFromName(sender, targetName);
     if(targetPlayer == null) return false;
@@ -486,13 +548,31 @@ public class CommandListener implements CommandExecutor
       errorCannotFindTarget(sender, targetName);
       return false;
     }
-    //we must remove compasses of the listening players
-    PlayerNameCompassTarget target = app.getTarget(targetName);
-    for(PlayerListener playerListener : target.listeners)
-    {
-      app.removeCompass(playerListener.getPlayer());
-    }
     app.removeTarget(targetName);
+    return true;
+  }
+  public void sendAutoListenStatus(CommandSender sender)
+  {
+    String status = "";
+    if(app.autoListenEnabled())
+    {
+      status = "enabled";
+    }
+    else
+    {
+      status = "disabled";
+    }
+    sender.sendMessage(AUTOLISTEN_STATUS.replace("**status**", status));
+  }
+  public boolean tryAutoListen(CommandSender sender)
+  {
+    sendAutoListenStatus(sender);
+    return true;
+  }
+  public boolean tryAutoListen(CommandSender sender, boolean status)
+  {
+    app.setAutoListen(status);
+    sendAutoListenStatus(sender);
     return true;
   }
   /**
@@ -506,15 +586,19 @@ public class CommandListener implements CommandExecutor
     Player player = getPlayerFromName(sender, playerName);
     if(player == null) return false;
     playerName = player.getName();
-    PlayerListener listener = app.getPlayerListener(playerName);
-    if(listener == null)
+    PlayerListener listener = app.playerMap.get(playerName);
+    if(listener != null)
     {
-      sender.sendMessage(NOT_LISTENING);
+      ILocatable target = listener.getTarget();
+      if(target == null)
+      {
+        sender.sendMessage(NO_TARGET);
+      }
+      sender.sendMessage(LISTENING_TO.replace("**name**", target.getLocationDescription()));
     }
     else
     {
-      CompassTarget target = app.getListenersTarget(listener); //todo: dont look again for the target
-      sender.sendMessage(LISTENING_TO.replace("**name**", target.getTrackingValue()));
+      sender.sendMessage(NOT_LISTENING);
     }
     return true;
   }
