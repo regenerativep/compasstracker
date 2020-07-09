@@ -85,9 +85,16 @@ public class App extends JavaPlugin implements Listener
     if(playerTargetList.size() == 0) return null;
     int ind = playerTargetList.indexOf(targetName);
     if(ind < 0) return playerMap.get(playerTargetList.get(0));
-    ind++;
-    if(ind == playerTargetList.size()) ind = 0;
-    return playerMap.get(playerTargetList.get(ind));
+    // ind++;
+    // if(ind == playerTargetList.size()) ind = 0;
+    ILocatable nextTarget = null;
+    for(int i = 1; i < playerTargetList.size(); i++)
+    {
+      String name = playerTargetList.get((ind + i) % playerTargetList.size());
+      nextTarget = playerMap.get(name);
+      if(nextTarget != null) break;
+    }
+    return nextTarget;
   }
   public boolean listen(Player player)
   {
@@ -102,6 +109,13 @@ public class App extends JavaPlugin implements Listener
     PlayerListener listener = playerMap.remove(playerName);
     if(listener == null) return false;
     //remove targets from any listeners
+    removeTargetListeners(listener);
+    listener.removeCompass();
+    listener.resetCompassTarget();
+    return true;
+  }
+  public void removeTargetListeners(PlayerListener listener)
+  {
     for(String listenerName : playerMap.keySet())
     {
       PlayerListener possibleListener = playerMap.get(listenerName);
@@ -110,9 +124,6 @@ public class App extends JavaPlugin implements Listener
         possibleListener.setTarget(null);
       }
     }
-    listener.removeCompass();
-    listener.resetCompassTarget();
-    return true;
   }
   public boolean targetExists(String targetName)
   {
@@ -140,6 +151,10 @@ public class App extends JavaPlugin implements Listener
   }
   public boolean removeTarget(String targetName)
   {
+    if(!playerTargetList.contains(targetName)) return false;
+    PlayerListener targetListener = playerMap.get(targetName);
+    if(targetListener == null) return false;
+    removeTargetListeners(targetListener);
     return playerTargetList.remove(targetName);
   }
   public boolean autoListenEnabled()

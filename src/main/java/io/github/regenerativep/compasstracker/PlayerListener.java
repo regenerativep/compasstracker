@@ -65,7 +65,7 @@ public class PlayerListener implements ILocatable
     Inventory inv = listeningPlayer.getInventory();
     for(ItemStack stack : inv)
     {
-      if(stack.getType() == Material.COMPASS)
+      if(stack != null && stack.getType() == Material.COMPASS)
       {
         int amount = stack.getAmount();
         if(amount <= 1)

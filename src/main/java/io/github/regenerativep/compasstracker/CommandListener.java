@@ -1,5 +1,8 @@
 package io.github.regenerativep.compasstracker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -88,6 +91,8 @@ public class CommandListener implements CommandExecutor
    */
   public final String NO_TARGET = "You are not listening to a target.";
   public final String AUTOLISTEN_STATUS = "Autolistener is **status**.";
+  public final String NO_TARGETS_IN_LIST = "There are no targets.";
+  public final String TARGET_LIST = "Targets: **targets**";
 
   /**
    * a reference to the main application
@@ -192,7 +197,7 @@ public class CommandListener implements CommandExecutor
       },
       new String[] { PERM_ADD_LISTENER_ANY }
     ));
-    cmdManager.commands.add(new CommandSpecifier( //ctr remove
+    cmdManager.commands.add(new CommandSpecifier( //ctr unlisten
       new Object[] { "unlisten" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING
@@ -206,7 +211,7 @@ public class CommandListener implements CommandExecutor
       },
       new String[] { PERM_ADD_LISTENER_SELF }
     ));
-    cmdManager.commands.add(new CommandSpecifier( //ctr remove [listener name]
+    cmdManager.commands.add(new CommandSpecifier( //ctr unlisten [listener name]
       new Object[] { "unlisten" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING,
@@ -221,7 +226,7 @@ public class CommandListener implements CommandExecutor
       },
       new String[] { PERM_ADD_LISTENER_ANY }
     ));
-    cmdManager.commands.add(new CommandSpecifier( //ctr remove
+    cmdManager.commands.add(new CommandSpecifier( //ctr relisten
       new Object[] { "relisten" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING
@@ -235,7 +240,7 @@ public class CommandListener implements CommandExecutor
       },
       new String[] { PERM_ADD_LISTENER_SELF }
     ));
-    cmdManager.commands.add(new CommandSpecifier( //ctr remove [listener name]
+    cmdManager.commands.add(new CommandSpecifier( //ctr relisten [listener name]
       new Object[] { "relisten" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING,
@@ -308,7 +313,7 @@ public class CommandListener implements CommandExecutor
       },
       new String[] { PERM_ADD_TARGET_ANY }
     ));
-    cmdManager.commands.add(new CommandSpecifier( //ctr stop
+    cmdManager.commands.add(new CommandSpecifier( //ctr removetarget
       new Object[] { "removetarget" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING
@@ -322,7 +327,7 @@ public class CommandListener implements CommandExecutor
       },
       new String[] { PERM_REMOVE_TARGET }
     ));
-    cmdManager.commands.add(new CommandSpecifier( //ctr stop [target name]
+    cmdManager.commands.add(new CommandSpecifier( //ctr removetarget [target name]
       new Object[] { "removetarget" },
       new CommandArgumentType[] {
         CommandArgumentType.STRING,
@@ -336,6 +341,36 @@ public class CommandListener implements CommandExecutor
         }
       },
       new String[] { PERM_REMOVE_TARGET }
+    ));
+    cmdManager.commands.add(new CommandSpecifier( //ctr targetlist
+      new Object[] { "targetlist" },
+      new CommandArgumentType[] {
+        CommandArgumentType.STRING
+      },
+      new CommandFunction()
+      {
+        @Override
+        public boolean call(CommandSender sender, Object[] args) {
+          List<String> targets = app.playerTargetList;
+          String playerMessage;
+          if(targets.size() == 0)
+          {
+            playerMessage = NO_TARGETS_IN_LIST;
+          }
+          else
+          {
+            String targetsStr = targets.get(0);
+            for(int i = 1; i < targets.size(); i++)
+            {
+              targetsStr += ", " + targets.get(i);
+            }
+            playerMessage = TARGET_LIST.replace("**targets**", targetsStr);
+          }
+          sender.sendMessage(playerMessage);
+          return true;
+        }
+      },
+      new String[] { }
     ));
     cmdManager.commands.add(new CommandSpecifier( //ctr who
       new Object[] { "who" },
