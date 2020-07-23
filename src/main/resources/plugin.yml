@@ -1,38 +1,26 @@
-main: io.github.regenerativep.compasstracker.App
-name: CompassTracker
-author: regenerativep
-version: 1.5.0
+main: maven-main
+name: maven-name
+author: maven-authors
+version: maven-version
 description: Have you compass point to a player or a location.
 api-version: 1.16
 commands:
   ctr:
     description: does things related to the compass tracker
-    usage: "Usage: /ctr [ listen | unlisten | relisten | target | removetarget | targetlist | who | autolisten ] [args]"
+    usage: "Usage: /ctr [ give | who | track | target | removetarget | targetlist | autogive | environment | environmentlist ] [args...]"
 permissions:
-  ctrack.addlistener:
-    description: Can add someone as a listener to a target
-    default: op
-  ctrack.addlistener.self:
-    description: Can add theirself as a listener to a target
+  ctrack.give.self:
+    description: Can give a compass to themself
     default: true
-  ctrack.removelistener:
-    description: Can remove someone from a target's listeners
+  ctrack.give:
+    description: Can give a compass to anyone
     default: op
-  ctrack.removelistener.self:
-    description: Can remove theirself from a target's listeners
-    default: true
-  ctrack.addtarget:
-    description: Can set someone as a target
+  ctrack.target:
+    description: Can manage targets
     default: op
-  ctrack.addtarget.self:
-    description: Can set theirself as a target
+  ctrack.autogive:
+    description: Can manage auto giving and auto taking compasses
     default: op
-  ctrack.addtargetlocation:
-    description: Can set a location as a target
-    default: true
-  ctrack.removetarget:
-    description: Can stop someone from being a target
+  ctrack.environment:
+    description: Can manage permitted environments
     default: op
-  ctrack.checktarget:
-    description: Can check what target someone is listening to
-  
