@@ -12,18 +12,18 @@ If you are not given a compass automatically, use
 
 To add players as a target, use
 ```
-/ctr target \[player name\]
+/ctr target [player name]
 ```
 
 You should be able to right click while holding the compass to cycle through the available targets, but you can also use
 ```
-/ctr track \[player name\]
+/ctr track [player name]
 ```
 to track someone.
 
 This plugin also works in the nether and the end with lodestone compasses! Use
 ```
-/ctr environment \[on|off\] \[overworld|nether|end\]
+/ctr environment [on|off] [overworld|nether|end]
 ```
 to allow or disallow tracking in that environment. Only the overworld is enabled by default.
 
@@ -34,17 +34,17 @@ to allow or disallow tracking in that environment. Only the overworld is enabled
 Give yourself a compass
 
 ```
-/ctr give \[player name\]
+/ctr give [player name]
 ```
 Give the specified player a compass
 
 ```
-/ctr target \[target name\]
+/ctr target [target name]
 ```
 Set the specified player as a target (Warning: You can add names not in the server.)
 
 ```
-/ctr removetarget \[target name\]
+/ctr removetarget [target name]
 ```
 Stop the specified player from being a target
 
@@ -54,12 +54,12 @@ Stop the specified player from being a target
 List the current targets
 
 ```
-/ctr track \[target name\]
+/ctr track [target name]
 ```
 Track the specified target with your compass
 
 ```
-/ctr track \[target name\] \[player name\]
+/ctr track [target name] [player name]
 ```
 Have someone else's compass track the specified target
 
@@ -69,17 +69,17 @@ Have someone else's compass track the specified target
 Print to chat your current target
 
 ```
-/ctr who \[player name\]
+/ctr who [player name]
 ```
 Print to chat the specified player's target
 
 ```
-/ctr environment \[boolean\]
+/ctr environment [boolean]
 ```
 Allow or disallow tracking in the current environment
 
 ```
-/ctr environment \[boolean\] \[environment name\]
+/ctr environment [boolean] [environment name]
 ```
 Allow or disallow tracking in the specified environment
 
