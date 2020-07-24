@@ -307,6 +307,17 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 }
                 true
             }
+        ),
+        CommandSpecifier(
+            arrayOf("autogive"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), {
+                sender, args ->
+                val enabled = args[1]
+                if(enabled is Boolean)
+                {
+                    app.autoGiveCompass = enabled
+                }
+                true
+            }, arrayOf(PERM_MANAGE_AUTOGIVE)
         )
     )
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<String>): Boolean

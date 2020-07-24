@@ -25,8 +25,8 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 
-data class CompassListener(val name: String, var targetName: String?);
-data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location>);
+data class CompassListener(val name: String, var targetName: String?)
+data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location>)
 
 class CompassTrackerTask(val app: CompassTracker) : BukkitRunnable() {
     override fun run()
@@ -74,6 +74,12 @@ fun getPlayerCompass(player: Player): ItemStack?
     }
     return null
 }
+fun getDimension(env: World.Environment?) = when(env) {
+    World.Environment.NORMAL -> "minecraft:overworld"
+    World.Environment.NETHER -> "minecraft:the_nether"
+    World.Environment.THE_END -> "minecraft:the_end"
+    else -> ""
+}
 fun setPlayerCompassTarget(player: Player, loc: Location)
 {
     val compass = getPlayerCompass(player)
@@ -84,12 +90,7 @@ fun setPlayerCompassTarget(player: Player, loc: Location)
     posComp.setInteger("Y", loc.blockY)
     posComp.setInteger("Z", loc.blockZ)
     nbti.setByte("LodestoneTracked", 0)
-    val dimension = when(loc.world?.environment) {
-        World.Environment.NORMAL -> "minecraft:overworld"
-        World.Environment.NETHER -> "minecraft:the_nether"
-        World.Environment.THE_END -> "minecraft:the_end"
-        else -> ""
-    }
+    val dimension = getDimension(loc.world?.environment)
     nbti.setString("LodestoneDimension", dimension)
     val finalItem = nbti.item
     player.inventory.setItem(player.inventory.first(compass), finalItem)
@@ -101,10 +102,7 @@ class CompassTracker() : JavaPlugin(), Listener
     var listeners: MutableMap<String, CompassListener> = mutableMapOf<String, CompassListener>()
     var updateTask: BukkitTask? = null
     var autoGiveCompass = true
-    // override fun onLoad()
-    // {
-
-    // }
+    
     override fun onEnable()
     {
         updateTask = CompassTrackerTask(this).runTaskTimer(this, 0, 20)

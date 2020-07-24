@@ -6,7 +6,7 @@
 
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
-  <version>1.6.0</version>
+  <version>1.6.1</version>
 
   <name>compasstracker</name>
   <url>http://github.com/regenerativep/compasstracker</url>
@@ -71,6 +71,14 @@
         <filtering>false</filtering>
         <includes>
           <include>plugin.yml</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>LICENSE.md</include>
+          <include>README.md</include>
         </includes>
       </resource>
     </resources>
