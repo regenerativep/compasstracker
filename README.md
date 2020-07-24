@@ -95,22 +95,22 @@ ctrack.give.self
 Can give a compass to themself (default: everyone)
 
 ```
-ctrack.give:
+ctrack.give
 ```
 Can give a compass to anyone (default: op)
 
 ```
-ctrack.target:
+ctrack.target
 ```
 Can manage targets (default: op)
 
 ```
-ctrack.autogive:
+ctrack.autogive
 ```
 Can manage auto giving and auto taking compasses (default: op)
 
 ```
-ctrack.environment:
+ctrack.environment
 ```
 Can manage permitted environments (default: op)
 
