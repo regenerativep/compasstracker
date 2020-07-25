@@ -42,45 +42,33 @@ class CompassTrackerTask(val app: CompassTracker) : BukkitRunnable() {
         }
     }
 }
+fun isValidCompass(item: ItemStack?): Boolean
+{
+    if(item == null) {
+        return false
+    }
+    if(item.type != Material.COMPASS) {
+        return false
+    }
+    val nbti = NBTItem(item)
+    if(!nbti.hasKey(COMPASS_TAG_KEY)) {
+        return false
+    }
+    val status = nbti.getByte(COMPASS_TAG_KEY)?.toInt() ?: 0
+    return status == 1
+}
 fun getPlayerCompass(player: Player): ItemStack?
 {
-    val inv = player.inventory
-    var possibleCompass: ItemStack? = null
-    val checkItem: (ItemStack?) -> ItemStack? = {
-        item: ItemStack? ->
-        if(item != null && item.type == Material.COMPASS)
-        {
-            if(possibleCompass == null) {
-                possibleCompass = item
-            }
-            //check to see if it has our special tag on it
-            val nbti = NBTItem(item)
-            if(nbti.hasKey(COMPASS_TAG_KEY))
-            {
-                val status = nbti.getByte(COMPASS_TAG_KEY) ?: 0
-                if(status.toInt() == 1)
-                {
-                    item
-                }
-            }
-        }
-        null
+    if(isValidCompass(player.inventory.itemInOffHand)) {
+        return player.inventory.itemInOffHand
     }
-
-    val foundItem = checkItem(inv.itemInOffHand)
-    if(foundItem != null)
+    for(item in player.inventory)
     {
-        return foundItem
-    }
-    for(item in inv)
-    {
-        val foundItem = checkItem(item)
-        if(foundItem != null)
-        {
-            return foundItem
+        if(isValidCompass(item)) {
+            return item
         }
     }
-    return possibleCompass
+    return null
 }
 fun getDimension(env: World.Environment?) = when(env) {
     World.Environment.NORMAL -> "minecraft:overworld"
@@ -88,10 +76,8 @@ fun getDimension(env: World.Environment?) = when(env) {
     World.Environment.THE_END -> "minecraft:the_end"
     else -> ""
 }
-fun setPlayerCompassTarget(player: Player, loc: Location?)
+fun createCompass(loc: Location?): ItemStack
 {
-    val compass = getPlayerCompass(player)
-    if(compass == null) { return }
     val nbti = NBTItem(ItemStack(Material.COMPASS))
     nbti.setByte(COMPASS_TAG_KEY, 1)
     if(loc == null)
@@ -108,16 +94,32 @@ fun setPlayerCompassTarget(player: Player, loc: Location?)
         val dimension = getDimension(loc.world?.environment)
         nbti.setString("LodestoneDimension", dimension)
     }
-    val finalItem = nbti.item
+    return nbti.item
+}
+fun setPlayerCompassTarget(player: Player, loc: Location?)
+{
+    val compass = getPlayerCompass(player)
+    if(compass == null) { return }
+    val item = createCompass(loc)
     val invPos = player.inventory.first(compass)
     if(invPos < 0) //if cannot find in inventory it *should* be in the off hand
     {
-        player.inventory.setItemInOffHand(finalItem)
+        player.inventory.setItemInOffHand(item)
     }
     else
     {
-        player.inventory.setItem(invPos, finalItem)
+        player.inventory.setItem(invPos, item)
     }
+}
+fun giveCompass(player: Player): Boolean
+{
+    //give player compass if player does not have compass
+    if(getPlayerCompass(player) == null)
+    {
+        player.inventory.addItem(createCompass(null))
+        return true
+    }
+    return false
 }
 class CompassTracker() : JavaPlugin(), Listener
 {
@@ -126,6 +128,7 @@ class CompassTracker() : JavaPlugin(), Listener
     var listeners: MutableMap<String, CompassListener> = mutableMapOf<String, CompassListener>()
     var updateTask: BukkitTask? = null
     var autoGiveCompass = true
+    var autoTarget = false
     
     override fun onEnable()
     {
@@ -175,16 +178,6 @@ class CompassTracker() : JavaPlugin(), Listener
         if(player != null)
         {
             return giveCompass(player)
-        }
-        return false
-    }
-    fun giveCompass(player: Player): Boolean
-    {
-        //give player compass if player does not have compass
-        if(!player.inventory.contains(Material.COMPASS))
-        {
-            player.inventory.addItem(ItemStack(Material.COMPASS))
-            return true
         }
         return false
     }
@@ -244,7 +237,10 @@ class CompassTracker() : JavaPlugin(), Listener
     }
     fun addTarget(targetName: String)
     {
-        targets.set(targetName, TargetListener(targetName, mutableMapOf()))
+        if(!targets.containsKey(targetName))
+        {
+            targets.set(targetName, TargetListener(targetName, mutableMapOf()))
+        }
     }
     fun removeTarget(targetName: String): Boolean
     {
@@ -260,6 +256,18 @@ class CompassTracker() : JavaPlugin(), Listener
         {
             permittedEnvironments.remove(env)
         }
+    }
+    fun setAutoGive(enabled: Boolean)
+    {
+        if(enabled)
+        {
+            //give everyone a compass
+            for(player in server.onlinePlayers)
+            {
+                giveCompass(player)
+            }
+        }
+        autoGiveCompass = enabled
     }
     @EventHandler
     fun onPlayerMove(event: PlayerMoveEvent)
@@ -283,10 +291,14 @@ class CompassTracker() : JavaPlugin(), Listener
         if(playerName !in listeners.keys)
         {
             listenPlayer(playerName)
-            if(autoGiveCompass)
-            {
-                giveCompass(event.player)
-            }
+        }
+        if(autoGiveCompass)
+        {
+            giveCompass(event.player)
+        }
+        if(autoTarget)
+        {
+            addTarget(playerName)
         }
     }
     @EventHandler
@@ -299,7 +311,7 @@ class CompassTracker() : JavaPlugin(), Listener
             for(i in 0..(drops.size - 1))
             {
                 val drop = drops.get(i)
-                if(drop.type == Material.COMPASS)
+                if(isValidCompass(drop))
                 {
                     drops.removeAt(i)
                     break
