@@ -60,6 +60,12 @@
       <groupId>de.tr7zw</groupId>
       <artifactId>item-nbt-api</artifactId>
       <version>2.4.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>de.tr7zw</groupId>
+          <artifactId>functional-annotations</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 
@@ -77,7 +83,8 @@
         <directory>${project.basedir}</directory>
         <filtering>false</filtering>
         <includes>
-          <include>LICENSE.md</include>
+          <include>LICENSE_COMPASSTRACKER</include>
+          <include>LICENSE_NBTAPI</include>
           <include>README.md</include>
         </includes>
       </resource>

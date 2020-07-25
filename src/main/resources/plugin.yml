@@ -7,7 +7,7 @@ api-version: 1.16
 commands:
   ctr:
     description: does things related to the compass tracker
-    usage: "Usage: /ctr [ give | who | track | target | removetarget | targetlist | autogive | environment | environmentlist ] [args...]"
+    usage: "Usage: /ctr [ give | who | track | target | removetarget | targetlist | autogive | environment | environmentlist | tickrate ] [args...]"
 permissions:
   ctrack.give.self:
     description: Can give a compass to themself
@@ -23,4 +23,7 @@ permissions:
     default: op
   ctrack.environment:
     description: Can manage permitted environments
+    default: op
+  ctrack.tickrate:
+    description: Can manage compass update rate
     default: op

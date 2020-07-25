@@ -15,6 +15,7 @@ val PERM_GIVE_ANY = "ctrack.give"
 val PERM_MANAGE_TARGETS = "ctrack.target"
 val PERM_MANAGE_AUTOGIVE = "ctrack.autogive"
 val PERM_MANAGE_ENVIRONMENT = "ctrack.environment"
+val PERM_MANAGE_TICKRATE = "ctrack.tickrate"
 
 fun errTargetExists(sender: CommandSender, targetName: String)
 {
@@ -318,6 +319,17 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 }
                 true
             }, arrayOf(PERM_MANAGE_AUTOGIVE)
+        ),
+        CommandSpecifier(
+            arrayOf("tickrate"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.INTEGER), {
+                sender, args ->
+                val ticks = args[1]
+                if(ticks is Int)
+                {
+                    app.runUpdateTimer(ticks.toLong())
+                }
+                true
+            }, arrayOf(PERM_MANAGE_TICKRATE)
         )
     )
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<String>): Boolean
