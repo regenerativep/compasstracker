@@ -83,7 +83,7 @@
         <directory>${project.basedir}</directory>
         <filtering>false</filtering>
         <includes>
-          <include>LICENSE_COMPASSTRACKER</include>
+          <include>LICENSE</include>
           <include>LICENSE_NBTAPI</include>
           <include>README.md</include>
         </includes>
@@ -186,6 +186,14 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <relocations>
+            <relocation>
+              <pattern>de.tr7zw.changeme.nbtapi</pattern>
+              <shadedPattern>de.tr7zw.regenerativep.compasstracker.nbtapi</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
       </plugin>
     </plugins>
   </build>
