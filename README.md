@@ -52,7 +52,3 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 `ctrack.environment` Can manage permitted environments (default: op)
 
 `ctrack.tickrate` Can manage compass update rate (default: op)
-
-
-### Todo:
-- allow specifying more dimensions than just normal, nether, and end (running /ctr environment on in that dimension should work though)
