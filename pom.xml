@@ -7,6 +7,10 @@
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
   <version>1.6.1</version>
+  <inceptionYear>2020</inceptionYear>
+  <organization>
+    <name>regenerativep</name>
+  </organization>
 
   <name>compasstracker</name>
   <url>http://github.com/regenerativep/compasstracker</url>
@@ -21,7 +25,7 @@
 
     <bukkitplugin.name>${project.outputName}</bukkitplugin.name>
     <bukkitplugin.main>${project.groupId}.${bukkitplugin.name}</bukkitplugin.main>
-    <bukkitplugin.authors>regenerativep</bukkitplugin.authors>
+    <bukkitplugin.authors>${organization.name}</bukkitplugin.authors>
 
     <bukkit.version>1.16.1-R0.1-SNAPSHOT</bukkit.version>
   </properties>
@@ -83,7 +87,7 @@
         <directory>${project.basedir}</directory>
         <filtering>false</filtering>
         <includes>
-          <include>LICENSE</include>
+          <!-- <include>LICENSE</include> -->
           <include>LICENSE_NBTAPI</include>
           <include>README.md</include>
         </includes>
@@ -97,7 +101,9 @@
         <executions>
           <execution>
             <id>compile</id>
-            <goals> <goal>compile</goal> </goals>
+            <goals>
+              <goal>compile</goal>
+            </goals>
             <configuration>
               <sourceDirs>
                 <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
@@ -194,6 +200,28 @@
             </relocation>
           </relocations>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>2.0.0</version>
+        <configuration>
+          <licenseName>bsd_2</licenseName>
+        </configuration>
+        <executions>
+          <execution>
+            <id>download-licenses</id>
+            <goals>
+              <goal>download-licenses</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>update-project-license</id>
+            <goals>
+              <goal>update-project-license</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
