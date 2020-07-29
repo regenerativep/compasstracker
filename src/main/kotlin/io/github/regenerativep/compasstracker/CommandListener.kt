@@ -3,6 +3,7 @@ package io.github.regenerativep.compasstracker;
 import io.github.regenerativep.commandmanager.CommandSpecifier;
 import io.github.regenerativep.commandmanager.CommandArgumentType;
 import io.github.regenerativep.commandmanager.inputCommand;
+import io.github.regenerativep.compasstracker.giveCompass;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.Command;
@@ -14,6 +15,7 @@ val PERM_GIVE_SELF = "ctrack.give.self"
 val PERM_GIVE_ANY = "ctrack.give"
 val PERM_MANAGE_TARGETS = "ctrack.target"
 val PERM_MANAGE_AUTOGIVE = "ctrack.autogive"
+val PERM_MANAGE_AUTOTARGET = "ctrack.autotarget"
 val PERM_MANAGE_ENVIRONMENT = "ctrack.environment"
 val PERM_MANAGE_TICKRATE = "ctrack.tickrate"
 
@@ -138,7 +140,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 sender, _ ->
                 if(sender is Player)
                 {
-                    if(!app.giveCompass(sender.name))
+                    if(!giveCompass(sender))
                     {
                         errYouHaveCompass(sender)
                     }
@@ -156,11 +158,12 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 val targetName = args[1]
                 if(targetName is String)
                 {
-                    if(!playerExists(targetName))
+                    val player = app.server.getPlayerExact(targetName)
+                    if(player == null)
                     {
                         errPlayerDoesNotExist(sender, targetName)
                     }
-                    else if(!app.giveCompass(targetName))
+                    else if(!giveCompass(player))
                     {
                         errTargetHasCompass(sender, targetName)
                     }
@@ -192,6 +195,18 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 _, args ->
                 val environment = args[2]
                 val enabled = args[1]
+                if(environment is World.Environment && enabled is Boolean)
+                {
+                    app.setEnvironment(environment, enabled)
+                }
+                true
+            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
+        ),
+        CommandSpecifier(
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.ENVIRONMENT, CommandArgumentType.BOOLEAN), {
+                _, args ->
+                val environment = args[1]
+                val enabled = args[2]
                 if(environment is World.Environment && enabled is Boolean)
                 {
                     app.setEnvironment(environment, enabled)
@@ -315,7 +330,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 val enabled = args[1]
                 if(enabled is Boolean)
                 {
-                    app.autoGiveCompass = enabled
+                    app.setAutoGive(enabled)
                 }
                 true
             }, arrayOf(PERM_MANAGE_AUTOGIVE)
@@ -330,6 +345,17 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 }
                 true
             }, arrayOf(PERM_MANAGE_TICKRATE)
+        ),
+        CommandSpecifier(
+            arrayOf("autotarget"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), {
+                sender, args ->
+                val enabled = args[1]
+                if(enabled is Boolean)
+                {
+                    app.autoTarget = enabled
+                }
+                true
+            }, arrayOf(PERM_MANAGE_AUTOTARGET)
         )
     )
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<String>): Boolean

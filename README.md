@@ -40,6 +40,10 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 `/ctr tickrate [update period in ticks]` Sets the update rate of the compasses. Default is 60.
 
+`/ctr autogive [boolean]` Sets if we automatically give players compasses. Default is true.
+
+`/ctr autotarget [boolean]` Sets if we automatically add players who join as a target. Default is false.
+
 ## Permissions
 `ctrack.give.self` Can give a compass to themself (default: everyone)
 
@@ -49,10 +53,8 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 `ctrack.autogive` Can manage auto giving and auto taking compasses (default: op)
 
+`ctrack.autotarget` Can manage automatically setting people who join to targets (default: op)
+
 `ctrack.environment` Can manage permitted environments (default: op)
 
 `ctrack.tickrate` Can manage compass update rate (default: op)
-
-
-### Todo:
-- allow specifying more dimensions than just normal, nether, and end (running /ctr environment on in that dimension should work though)
