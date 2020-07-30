@@ -235,27 +235,38 @@ class CompassTracker() : JavaPlugin(), Listener
         listener.targetName = targetName
         sendTrackingMessage(playerName)
     }
-    fun addTarget(targetName: String)
+    fun addTarget(targetName: String): Boolean
     {
         if(!targets.containsKey(targetName))
         {
             targets.set(targetName, TargetListener(targetName, mutableMapOf()))
+            return true
         }
+        return false
     }
     fun removeTarget(targetName: String): Boolean
     {
         return targets.remove(targetName) != null
     }
-    fun setEnvironment(env: World.Environment, enabled: Boolean)
+    fun setEnvironment(env: World.Environment, enabled: Boolean): Boolean
     {
         if(enabled)
         {
-            permittedEnvironments.add(env)
+            if(env !in permittedEnvironments)
+            {
+                permittedEnvironments.add(env)
+                return true
+            }
         }
         else
         {
-            permittedEnvironments.remove(env)
+            if(env in permittedEnvironments)
+            {
+                permittedEnvironments.remove(env)
+                return true
+            }
         }
+        return false
     }
     fun setAutoGive(enabled: Boolean)
     {

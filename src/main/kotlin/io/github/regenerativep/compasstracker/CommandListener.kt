@@ -51,6 +51,55 @@ fun warnTargetNotInServer(sender: CommandSender, targetName: String)
 {
     sender.sendMessage("Warning: Target \"${targetName}\" is not in the server.")
 }
+fun sucTargetedPlayer(sender: CommandSender, targetName: String)
+{
+    sender.sendMessage("Success: Player \"${targetName}\" has been added as a target.")
+}
+fun sucTargetedSelf(sender: CommandSender)
+{
+    sender.sendMessage("Success: You have been added as a target.")
+}
+fun sucRemovedTarget(sender: CommandSender, targetName: String)
+{
+    sender.sendMessage("Success: Player \"${targetName}\" has been removed from the targets.")
+}
+fun sucRemovedTargetSelf(sender: CommandSender)
+{
+    sender.sendMessage("Success: You have been removed from the targets.")
+}
+fun sucGaveCompassSelf(sender: CommandSender)
+{
+    sender.sendMessage("Success: Gave you a compass.")
+}
+fun sucGaveCompass(sender: CommandSender, playerName: String)
+{
+    sender.sendMessage("Success: Gave player \"${playerName}\" a compass.")
+}
+fun sucSetEnvironment(sender: CommandSender, environment: World.Environment, status: Boolean)
+{
+    sender.sendMessage("Success: Set the environment \"${environment}\" to ${status}")
+}
+fun sucNowTrackingSelf(sender: CommandSender, targetName: String)
+{
+    sender.sendMessage("Success: You are now tracking player \"${targetName}\".")
+}
+fun sucNowTracking(sender: CommandSender, targetName: String, listenerName: String)
+{
+    sender.sendMessage("Success: Player \"${listenerName}\" is now tracking player \"${targetName}\".")
+}
+fun sucAutoGiveStatus(sender: CommandSender, status: Boolean)
+{
+    sender.sendMessage("Success: Automatically giving compasses to players has been set to ${status}.")
+}
+fun sucChangeTickRate(sender: CommandSender, tickrate: Long)
+{
+    sender.sendMessage("Success: Set the tick amount between compass updates to ${tickrate}")
+}
+fun sucAutoTargetStatus(sender: CommandSender, status: Boolean)
+{
+    sender.sendMessage("Success: Automatically targeting players as they join has been set to ${status}.")
+}
+
 class CommandListener(val app: CompassTracker) : CommandExecutor
 {
     val commands: List<CommandSpecifier> = listOf(
@@ -59,7 +108,10 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 sender, _ ->
                 if(sender is Player)
                 {
-                    app.addTarget(sender.name)
+                    if(app.addTarget(sender.name))
+                    {
+                        sucTargetedSelf(sender)
+                    }
                 }
                 else
                 {
@@ -74,7 +126,10 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 val targetName = args[1]
                 if(targetName is String)
                 {
-                    app.addTarget(targetName)
+                    if(app.addTarget(targetName))
+                    {
+                        sucTargetedPlayer(sender, targetName)
+                    }
                     if(!playerExists(targetName))
                     {
                         warnTargetNotInServer(sender, targetName)
@@ -91,6 +146,10 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     if(!app.removeTarget(sender.name))
                     {
                         errYouAreNotTarget(sender)
+                    }
+                    else
+                    {
+                        sucRemovedTargetSelf(sender)
                     }
                 }
                 else
@@ -109,6 +168,10 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     if(!app.removeTarget(targetName))
                     {
                         errTargetDoesNotExist(sender, targetName)
+                    }
+                    else
+                    {
+                        sucRemovedTarget(sender, targetName)
                     }
                 }
                 true
@@ -144,6 +207,10 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     {
                         errYouHaveCompass(sender)
                     }
+                    else
+                    {
+                        sucGaveCompassSelf(sender)
+                    }
                 }
                 else
                 {
@@ -167,6 +234,10 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     {
                         errTargetHasCompass(sender, targetName)
                     }
+                    else
+                    {
+                        sucGaveCompass(sender, targetName)
+                    }
                 }
                 true
             }, arrayOf(PERM_GIVE_ANY)
@@ -181,6 +252,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     if(environment is World.Environment && enabled is Boolean)
                     {
                         app.setEnvironment(environment, enabled)
+                        sucSetEnvironment(sender, environment, enabled)
                     }
                 }
                 else
@@ -192,24 +264,26 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
         ),
         CommandSpecifier(
             arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN, CommandArgumentType.ENVIRONMENT), {
-                _, args ->
+                sender, args ->
                 val environment = args[2]
                 val enabled = args[1]
                 if(environment is World.Environment && enabled is Boolean)
                 {
                     app.setEnvironment(environment, enabled)
+                    sucSetEnvironment(sender, environment, enabled)
                 }
                 true
             }, arrayOf(PERM_MANAGE_ENVIRONMENT)
         ),
         CommandSpecifier(
             arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.ENVIRONMENT, CommandArgumentType.BOOLEAN), {
-                _, args ->
+                sender, args ->
                 val environment = args[1]
                 val enabled = args[2]
                 if(environment is World.Environment && enabled is Boolean)
                 {
                     app.setEnvironment(environment, enabled)
+                    sucSetEnvironment(sender, environment, enabled)
                 }
                 true
             }, arrayOf(PERM_MANAGE_ENVIRONMENT)
@@ -287,6 +361,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                         if(targetName in app.targets.keys)
                         {
                             app.setTarget(sender.name, targetName)
+                            sucNowTrackingSelf(sender, targetName)
                         }
                         else
                         {
@@ -315,6 +390,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     else if(targetName in app.targets.keys)
                     {
                         app.setTarget(listenerName, targetName)
+                        sucNowTracking(sender, targetName, listenerName)
                     }
                     else
                     {
@@ -322,7 +398,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                     }
                 }
                 true
-            }
+            }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
             arrayOf("autogive"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), {
@@ -331,6 +407,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 if(enabled is Boolean)
                 {
                     app.setAutoGive(enabled)
+                    sucAutoGiveStatus(sender, enabled)
                 }
                 true
             }, arrayOf(PERM_MANAGE_AUTOGIVE)
@@ -341,7 +418,9 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 val ticks = args[1]
                 if(ticks is Int)
                 {
-                    app.runUpdateTimer(ticks.toLong())
+                    val ticksLong = ticks.toLong()
+                    app.runUpdateTimer(ticksLong)
+                    sucChangeTickRate(sender, ticksLong)
                 }
                 true
             }, arrayOf(PERM_MANAGE_TICKRATE)
@@ -353,6 +432,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor
                 if(enabled is Boolean)
                 {
                     app.autoTarget = enabled
+                    sucAutoTargetStatus(sender, enabled)
                 }
                 true
             }, arrayOf(PERM_MANAGE_AUTOTARGET)

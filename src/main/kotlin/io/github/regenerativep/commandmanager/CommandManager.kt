@@ -73,16 +73,17 @@ fun testValue(value: String, type: CommandArgumentType): Boolean
 }
 fun String.toBooleanOrNull(): Boolean?
 {
+    val text = this.toLowerCase()
     for(testValue in POSSIBLE_TRUE_BOOLEAN_VALUES)
     {
-        if(testValue == this)
+        if(testValue == text)
         {
             return true;
         }
     }
     for(testValue in POSSIBLE_FALSE_BOOLEAN_VALUES)
     {
-        if(testValue == this)
+        if(testValue == text)
         {
             return false;
         }

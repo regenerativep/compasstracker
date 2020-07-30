@@ -6,7 +6,7 @@
 
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
-  <version>1.6.1</version>
+  <version>1.6.2</version>
   <inceptionYear>2020</inceptionYear>
   <organization>
     <name>regenerativep</name>
@@ -25,7 +25,7 @@
 
     <bukkitplugin.name>${project.outputName}</bukkitplugin.name>
     <bukkitplugin.main>${project.groupId}.${bukkitplugin.name}</bukkitplugin.main>
-    <bukkitplugin.authors>${organization.name}</bukkitplugin.authors>
+    <bukkitplugin.authors>${project.organization.name}</bukkitplugin.authors>
 
     <bukkit.version>1.16.1-R0.1-SNAPSHOT</bukkit.version>
   </properties>
@@ -88,7 +88,7 @@
         <filtering>false</filtering>
         <includes>
           <!-- <include>LICENSE</include> -->
-          <include>LICENSE_NBTAPI</include>
+          <include>LICENSE_NBTAPI.txt</include>
           <include>README.md</include>
         </includes>
       </resource>
