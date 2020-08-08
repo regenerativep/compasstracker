@@ -58,3 +58,18 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 `ctrack.environment` Can manage permitted environments (default: op)
 
 `ctrack.tickrate` Can manage compass update rate (default: op)
+
+## todo
+- remember allowed environments
+- remember targets
+- clear targets
+- clear all tracker compasses
+- give everyone tracker compass
+- on autotarget turn on, make everyone in server target
+- add everyone as targets
+- add intentional target location error
+- target/tracker teams; ex. team a can track anyone from team b or c, team b can track anyone from team a, team c cannot track anyone, etc
+- document code
+- make functions intended to work on specific structures/objects part of those structures/objects (move from static global to static object)
+- create a general player identifier structure for ease of grabbing player objects or names when you may have one or the other
+- 
