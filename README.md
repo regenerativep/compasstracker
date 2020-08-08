@@ -72,4 +72,3 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 - document code
 - make functions intended to work on specific structures/objects part of those structures/objects (move from static global to static object)
 - create a general player identifier structure for ease of grabbing player objects or names when you may have one or the other
-- 
