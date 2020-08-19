@@ -60,6 +60,7 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 `ctrack.tickrate` Can manage compass update rate (default: op)
 
 ## todo
+- use earlier spigot api to allow usage pre-1.16 (also detect current version to warn user when allowing compass tracking in an environment other than the overworld)
 - remember allowed environments
 - remember targets
 - clear targets
