@@ -60,8 +60,6 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 `ctrack.tickrate` Can manage compass update rate (default: op)
 
 ## todo
-- use normal compasses instead of lodestone compasses in the overworld for backwards compatibility
-- dont allow tracking self
 - remember allowed environments
 - remember targets
 - clear targets

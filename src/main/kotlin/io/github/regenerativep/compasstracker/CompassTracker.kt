@@ -47,6 +47,7 @@ class CompassTracker() : JavaPlugin(), Listener {
     var updateTask: BukkitTask? = null
     var autoGiveCompass = true
     var autoTarget = false
+    var allowTargetSelf = false
     
     override fun onEnable() {
         runUpdateTimer(60)
@@ -83,18 +84,6 @@ class CompassTracker() : JavaPlugin(), Listener {
         this.server.getPlayerExact(playerName)?.let { player
             -> this.listeners.get(playerName)?.let { listener
                 -> player.sendTrackingMessage(listener)
-            }
-        }
-    }
-    fun getNextTarget(targetName: String?): String? {
-        return this.targets.keys.toList().let { keyList
-            -> if(keyList.size == 0) {
-                null
-            }
-            else {
-                ( (keyList.indexOf(targetName) + 1) % keyList.size).let { nextInd
-                    -> keyList.get(nextInd)
-                }
             }
         }
     }
@@ -173,9 +162,19 @@ class CompassTracker() : JavaPlugin(), Listener {
                 if(event.action.isRightClick()) {
                     this.setTarget(
                         event.player.name,
-                        getNextTarget(
-                            this.listeners.get(event.player.name)?.targetName
-                        )
+                        if(allowTargetSelf) {
+                            getNextTarget(
+                                this.targets,
+                                this.listeners.get(event.player.name)?.targetName
+                            )
+                        }
+                        else {
+                            getNextTargetExcept(
+                                this.targets,
+                                this.listeners.get(event.player.name)?.targetName,
+                                event.player.name
+                            )
+                        }
                     )
                 }
                 else if(event.action.isLeftClick()) {
@@ -186,6 +185,39 @@ class CompassTracker() : JavaPlugin(), Listener {
             }
         }
     }
+}
+fun getNextTarget(targets: MutableMap<String, TargetListener>, targetName: String?): String? {
+    return getNextTarget(targets.keys.toList(), targetName)
+}
+fun getNextTarget(targetKeyList: List<String>, targetName: String?): String? {
+    return if(targetKeyList.size == 0) {
+        null
+    }
+    else {
+        ( (targetKeyList.indexOf(targetName) + 1) % targetKeyList.size).let { nextInd
+            -> targetKeyList.get(nextInd)
+        }
+    }
+}
+fun getNextTargetExcept(targets: MutableMap<String, TargetListener>, targetName: String?, exceptName: String): String? {
+    return getNextTargetExcept(targets.keys.toList(), targetName, exceptName)
+}
+fun getNextTargetExcept(targetKeyList: List<String>, targetName: String?, exceptName: String): String? {
+    return getNextTarget(targetKeyList, targetName)?.let { foundTarget
+        -> if(foundTarget == exceptName) {
+            getNextTarget(targetKeyList, foundTarget)?.let { secondFoundTarget
+                -> if(secondFoundTarget == exceptName) {
+                    null
+                }
+                else {
+                    secondFoundTarget
+                }
+            } ?: null //kotlin might say not to use elvis here, but im using it for the scenario that getNextTarget returns null, and then the let function will not be called
+        }
+        else {
+            foundTarget
+        }
+    } ?: null
 }
 fun World.Environment.getDimensionCode() = when(this) {
     World.Environment.NORMAL -> "minecraft:overworld"

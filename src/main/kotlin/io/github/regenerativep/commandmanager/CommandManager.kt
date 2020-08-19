@@ -4,8 +4,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 
-val POSSIBLE_TRUE_BOOLEAN_VALUES: List<String> = listOf("true", "t", "on", "enable", "yes")
-val POSSIBLE_FALSE_BOOLEAN_VALUES: List<String> = listOf("false", "f", "off", "disable", "no")
+val POSSIBLE_TRUE_BOOLEAN_VALUES: List<String> = listOf("true", "t", "on", "enable", "yes", "allow")
+val POSSIBLE_FALSE_BOOLEAN_VALUES: List<String> = listOf("false", "f", "off", "disable", "no", "disallow")
 const val NO_PERMISSION: String = "Insufficient permissions. (**reason**)";
 
 enum class CommandArgumentType
