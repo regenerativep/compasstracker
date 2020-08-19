@@ -1,7 +1,7 @@
 # Compass Tracker
 Compass tracker plugin for Spigot servers
 
-The idea for this plugin comes from [Dream's manhunt videos](https://www.youtube.com/watch?v=3tH4dyOPZnY&feature=youtu.be), however this is written in mind for my own manhunt events.
+The idea for this plugin comes from [Dream's manhunt videos](https://www.youtube.com/watch?v=3tH4dyOPZnY), however this is written in mind for my own manhunt events.
 The basic idea of this plugin, is that you have two groups of players in a Minecraft server: one is the trackers, and the other is the tracked, which I refer to as a target. There can be multiple trackers and multiple targets, and targets are also able to track other targets.
 
 ## Basic use:
@@ -34,7 +34,7 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 `/ctr environment [boolean]` Allow or disallow tracking in the current environment
 
-`/ctr environment [boolean] [environment name]` Allow or disallow tracking in the specified environment
+`/ctr environment [boolean] [environment name]` or `/ctr environment [environment name] [boolean]` Allow or disallow tracking in the specified environment
 
 `/ctr environmentlist` List the trackable environments
 
@@ -60,14 +60,23 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 `ctrack.tickrate` Can manage compass update rate (default: op)
 
 ## todo
+- document code
 - use earlier spigot api to allow usage pre-1.16 (also detect current version to warn user when allowing compass tracking in an environment other than the overworld)
 - remember allowed environments
 - remember targets
-- clear targets
-- clear all tracker compasses
-- give everyone tracker compass
+- ability to clear targets
+- ability to clear all tracker compasses
+- ability to give everyone tracker compass
 - on autotarget turn on, make everyone in server target
-- add everyone as targets
-- add intentional target location error
+- ability add everyone as targets
+
+## potential additions
+- add intentional target location uncertainty
 - target/tracker teams; ex. team a can track anyone from team b or c, team b can track anyone from team a, team c cannot track anyone, etc
-- document code
+
+## let me know if there is a better way to
+- detect left/right click. if you do something like right click on a button, compass tracker detects that and thinks you are trying to interact with the compass. id prefer side effects from interacting with the compass not to happen
+- change nbt values of an item. currently the item is just replaced with another item with the new desired nbt values whenever there needs to be an update. itd be nice if the animation when you pick up an item in your hand didnt happen
+- create lodestone compasses. itd be nice not to rely on a big library (NBTAPI) just for generating a single simple item
+- add licenses for dependencies in maven, specifically NBTAPI, to the compiled jars. i currently just have a copy of the license as a resource to be moved over to the jar during compilation
+- exclude dependencies of dependencies in maven, specifically NBTAPI's functional annotations since it isnt a required dependency for NBTAPI to function. i want to avoid putting GNU licenses in this project
