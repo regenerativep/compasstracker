@@ -6,64 +6,41 @@ import org.bukkit.command.CommandSender;
 
 val POSSIBLE_TRUE_BOOLEAN_VALUES: List<String> = listOf("true", "t", "on", "enable", "yes")
 val POSSIBLE_FALSE_BOOLEAN_VALUES: List<String> = listOf("false", "f", "off", "disable", "no")
-val NO_PERMISSION: String = "Insufficient permissions. (**reason**)";
-fun getFitCommand(commands: List<CommandSpecifier>, args: Array<String>): CommandSpecifier?
+const val NO_PERMISSION: String = "Insufficient permissions. (**reason**)";
+
+enum class CommandArgumentType
 {
-    for(cmd in commands)
-    {
-        if(fits(cmd, args))
-        {
-            return cmd
-        }
-    }
-    return null
+    STRING, INTEGER, FLOAT, BOOLEAN, ENVIRONMENT
 }
-fun inputCommand(commands: List<CommandSpecifier>, sender: CommandSender, args: Array<String>): Boolean
-{
-    val cmd = getFitCommand(commands, args)
-    if(cmd == null) return false
-    for(perm in cmd.perms)
-    {
-        if(!sender.hasPermission(perm))
-        {
-            sender.sendMessage(NO_PERMISSION.replace("**reason**", perm))
-            return false
-        }
+data class CommandSpecifier(val values: Array<Any>, val args: Array<CommandArgumentType>, val func: (CommandSender, Array<Any>) -> Boolean, val perms: Array<String> = arrayOf()) {
+    fun fits(inpArgs: Array<String>): Boolean {
+        return this.args.size == inpArgs.size
+            && inpArgs.mapIndexed { ind, value
+                -> Pair(ind, value)
+            }
+            .find { (ind, value)
+                -> !testValue(value, this.args[ind])
+            } == null
+            && this.values.mapIndexed { ind, value
+                -> Pair(ind, value)
+            }
+            .find { (ind, value)
+                -> getValue(inpArgs[ind], this.args[ind]) != value
+            } == null
     }
-    val objArgs: Array<Any> = Array(args.size, { i -> getValue(args[i], cmd.args[i]) } )
-    return cmd.func(sender, objArgs)
 }
-fun fits(cmd: CommandSpecifier, args: Array<String>): Boolean
-{
-    if(cmd.args.size != args.size) {
-        return false
-    }
-    for(i in 0..(args.size - 1))
-    {
-        val testVal = args[i]
-        val argType = cmd.args[i]
-        if(!testValue(testVal, argType))
-        {
-            return false
+
+fun inputCommand(commands: List<CommandSpecifier>, sender: CommandSender, args: Array<String>): Boolean {
+    return commands.find { it.fits(args) }?.let { cmd
+        -> cmd.perms.find { !sender.hasPermission(it) }?.let {
+            sender.sendMessage(NO_PERMISSION.replace("**reason**", it))
+            false
         }
-    }
-    for(i in 0..(cmd.values.size - 1))
-    {
-        val testVal = args[i]
-        val argType = cmd.args[i]
-        val testValueObj = getValue(testVal, argType)
-        val correctValue = cmd.values[i]
-        if(testValueObj != correctValue)
-        {
-            return false
-        }
-    }
-    return true
+        ?: cmd.func(sender, Array(args.size, { i -> getValue(args[i], cmd.args[i]) } ))
+    } ?: false
 }
-fun testValue(value: String, type: CommandArgumentType): Boolean
-{
-    return when(type)
-    {
+fun testValue(value: String, type: CommandArgumentType): Boolean {
+    return when(type) {
         CommandArgumentType.STRING -> value.length > 0
         CommandArgumentType.INTEGER -> value.toIntOrNull() != null
         CommandArgumentType.FLOAT -> value.toFloatOrNull() != null
@@ -71,39 +48,29 @@ fun testValue(value: String, type: CommandArgumentType): Boolean
         CommandArgumentType.ENVIRONMENT -> value.toEnvironmentOrNull() != null
     }
 }
-fun String.toBooleanOrNull(): Boolean?
-{
-    val text = this.toLowerCase()
-    for(testValue in POSSIBLE_TRUE_BOOLEAN_VALUES)
-    {
-        if(testValue == text)
-        {
-            return true;
+fun String.toBooleanOrNull(): Boolean? {
+    return this.toLowerCase().let { text
+        -> if(text in POSSIBLE_TRUE_BOOLEAN_VALUES) {
+            true
+        }
+        else if (text in POSSIBLE_FALSE_BOOLEAN_VALUES) {
+            false
+        }
+        else {
+            null
         }
     }
-    for(testValue in POSSIBLE_FALSE_BOOLEAN_VALUES)
-    {
-        if(testValue == text)
-        {
-            return false;
-        }
-    }
-    return null
 }
-fun String.toEnvironmentOrNull(): World.Environment?
-{
-    return when(this.toLowerCase())
-    {
+fun String.toEnvironmentOrNull(): World.Environment? {
+    return when(this.toLowerCase().split(":").last()) {
         "overworld", "surface", "normal", "default" -> World.Environment.NORMAL
         "nether", "underworld" -> World.Environment.NETHER
         "end", "the end", "the_end", "void" -> World.Environment.THE_END
         else -> null
     }
 }
-fun getValue(value: String, type: CommandArgumentType): Any
-{
-    return when(type)
-    {
+fun getValue(value: String, type: CommandArgumentType): Any {
+    return when(type) {
         CommandArgumentType.STRING -> value
         CommandArgumentType.INTEGER -> value.toIntOrNull() ?: -1
         CommandArgumentType.FLOAT -> value.toFloatOrNull() ?: -1

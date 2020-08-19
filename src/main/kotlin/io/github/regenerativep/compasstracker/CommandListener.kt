@@ -19,427 +19,344 @@ val PERM_MANAGE_AUTOTARGET = "ctrack.autotarget"
 val PERM_MANAGE_ENVIRONMENT = "ctrack.environment"
 val PERM_MANAGE_TICKRATE = "ctrack.tickrate"
 
-fun errTargetExists(sender: CommandSender, targetName: String)
-{
+fun errTargetExists(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Error: Target \"${targetName}\" already exists.")
+    return false
 }
-fun errTargetDoesNotExist(sender: CommandSender, targetName: String)
-{
+fun errTargetDoesNotExist(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Error: Target \"${targetName}\" doesn't exist.")
+    return false
 }
-fun errPlayerDoesNotExist(sender: CommandSender, targetName: String)
-{
+fun errPlayerDoesNotExist(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Error: Player \"${targetName}\" doesn't exist.")
+    return false
 }
-fun errYouAreNotTarget(sender: CommandSender)
-{
+fun errYouAreNotTarget(sender: CommandSender): Boolean {
     sender.sendMessage("Error: You are not a target.")
+    return false
 }
-fun errTargetHasCompass(sender: CommandSender, targetName: String)
-{
+fun errTargetHasCompass(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Error: Target \"${targetName}\" already has a compass.")
+    return false
 }
-fun errYouHaveCompass(sender: CommandSender)
-{
+fun errYouHaveCompass(sender: CommandSender): Boolean {
     sender.sendMessage("Error: You already have a compass.")
+    return false
 }
-fun errYouNotPlayer(sender: CommandSender)
-{
+fun errYouNotPlayer(sender: CommandSender): Boolean {
     sender.sendMessage("Error: You are not a player.")
+    return false
 }
-fun warnTargetNotInServer(sender: CommandSender, targetName: String)
-{
+fun errIndeterminableEnvironment(sender: CommandSender): Boolean {
+    sender.sendMessage("Error: Cannot determine your environment.")
+    return false
+}
+fun warnTargetNotInServer(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Warning: Target \"${targetName}\" is not in the server.")
+    return false
 }
-fun sucTargetedPlayer(sender: CommandSender, targetName: String)
-{
+fun sucTargetedPlayer(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Success: Player \"${targetName}\" has been added as a target.")
+    return true
 }
-fun sucTargetedSelf(sender: CommandSender)
-{
+fun sucRetargetedPlayer(sender: CommandSender, targetName: String): Boolean {
+    sender.sendMessage("Success: Player \"${targetName}\" has been re-added as a target.")
+    return true
+}
+fun sucTargetedSelf(sender: CommandSender): Boolean {
     sender.sendMessage("Success: You have been added as a target.")
+    return true
 }
-fun sucRemovedTarget(sender: CommandSender, targetName: String)
-{
+fun sucRetargetedSelf(sender: CommandSender): Boolean {
+    sender.sendMessage("Success: You have been re-added as a target.")
+    return true
+}
+fun sucRemovedTarget(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Success: Player \"${targetName}\" has been removed from the targets.")
+    return true
 }
-fun sucRemovedTargetSelf(sender: CommandSender)
-{
+fun sucRemovedTargetSelf(sender: CommandSender): Boolean {
     sender.sendMessage("Success: You have been removed from the targets.")
+    return true
 }
-fun sucGaveCompassSelf(sender: CommandSender)
-{
+fun sucGaveCompassSelf(sender: CommandSender): Boolean {
     sender.sendMessage("Success: Gave you a compass.")
+    return true
 }
-fun sucGaveCompass(sender: CommandSender, playerName: String)
-{
+fun sucGaveCompass(sender: CommandSender, playerName: String): Boolean {
     sender.sendMessage("Success: Gave player \"${playerName}\" a compass.")
+    return true
 }
-fun sucSetEnvironment(sender: CommandSender, environment: World.Environment, status: Boolean)
-{
+fun sucSetEnvironment(sender: CommandSender, environment: World.Environment, status: Boolean): Boolean {
     sender.sendMessage("Success: Set the environment \"${environment}\" to ${status}")
+    return true
 }
-fun sucNowTrackingSelf(sender: CommandSender, targetName: String)
-{
+fun sucNowTrackingSelf(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Success: You are now tracking player \"${targetName}\".")
+    return true
 }
-fun sucNowTracking(sender: CommandSender, targetName: String, listenerName: String)
-{
+fun sucNowTracking(sender: CommandSender, targetName: String, listenerName: String): Boolean {
     sender.sendMessage("Success: Player \"${listenerName}\" is now tracking player \"${targetName}\".")
+    return true
 }
-fun sucAutoGiveStatus(sender: CommandSender, status: Boolean)
-{
+fun sucAutoGiveStatus(sender: CommandSender, status: Boolean): Boolean {
     sender.sendMessage("Success: Automatically giving compasses to players has been set to ${status}.")
+    return true
 }
-fun sucChangeTickRate(sender: CommandSender, tickrate: Long)
-{
+fun sucChangeTickRate(sender: CommandSender, tickrate: Long): Boolean {
     sender.sendMessage("Success: Set the tick amount between compass updates to ${tickrate}")
+    return true
 }
-fun sucAutoTargetStatus(sender: CommandSender, status: Boolean)
-{
+fun sucAutoTargetStatus(sender: CommandSender, status: Boolean): Boolean {
     sender.sendMessage("Success: Automatically targeting players as they join has been set to ${status}.")
+    return true
 }
 
-class CommandListener(val app: CompassTracker) : CommandExecutor
-{
+class CommandListener(val app: CompassTracker) : CommandExecutor {
     val commands: List<CommandSpecifier> = listOf(
         CommandSpecifier(
-            arrayOf("target"), arrayOf(CommandArgumentType.STRING), {
-                sender, _ ->
-                if(sender is Player)
-                {
-                    if(app.addTarget(sender.name))
-                    {
+            arrayOf("target"), arrayOf(CommandArgumentType.STRING), { sender, _
+                -> if(sender is Player) {
+                    app.targets.set(sender.name, TargetListener(sender.name))
+                    if(sender.name in app.targets.keys) {
+                        sucRetargetedSelf(sender)
+                    }
+                    else {
                         sucTargetedSelf(sender)
                     }
                 }
-                else
-                {
+                else {
                     errYouNotPlayer(sender)
                 }
-                true
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("target"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), {
-                sender, args ->
-                val targetName = args[1]
-                if(targetName is String)
-                {
-                    if(app.addTarget(targetName))
-                    {
-                        sucTargetedPlayer(sender, targetName)
-                    }
-                    if(!playerExists(targetName))
-                    {
+            arrayOf("target"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
+                -> (args[1] as String).let { targetName
+                    -> if(!playerExists(targetName)) {
                         warnTargetNotInServer(sender, targetName)
                     }
+                    app.targets.set(targetName, TargetListener(targetName))
+                    if(targetName in app.targets.keys) {
+                        sucRetargetedPlayer(sender, targetName)
+                    }
+                    else {
+                        sucTargetedPlayer(sender, targetName)
+                    }
                 }
-                true
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("removetarget"), arrayOf(CommandArgumentType.STRING), {
-                sender, _ ->
-                if(sender is Player)
-                {
-                    if(!app.removeTarget(sender.name))
-                    {
+            arrayOf("removetarget"), arrayOf(CommandArgumentType.STRING), { sender, _
+                -> if(sender is Player) {
+                    if(app.targets.remove(sender.name) == null) {
                         errYouAreNotTarget(sender)
                     }
-                    else
-                    {
+                    else {
                         sucRemovedTargetSelf(sender)
                     }
                 }
-                else
-                {
+                else {
                     errYouNotPlayer(sender)
                 }
-                true
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("removetarget"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), {
-                sender, args ->
-                val targetName = args[1]
-                if(targetName is String)
-                {
-                    if(!app.removeTarget(targetName))
-                    {
+            arrayOf("removetarget"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
+                -> (args[1] as String).let { targetName
+                    -> if(app.targets.remove(targetName) == null) {
                         errTargetDoesNotExist(sender, targetName)
                     }
-                    else
-                    {
+                    else {
                         sucRemovedTarget(sender, targetName)
                     }
                 }
-                true
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("targetlist"), arrayOf(CommandArgumentType.STRING), {
-                sender, _ ->
-                var message: String
-                if(app.targets.size > 0)
-                {
-                    val keys = app.targets.keys.toTypedArray()
-                    message = "Targets: ${keys[0]}"
-                    for(i in 1..(keys.size - 1))
-                    {
-                        message += ", ${keys[i]}"
+            arrayOf("targetlist"), arrayOf(CommandArgumentType.STRING), { sender, _
+                -> sender.sendMessage(
+                    if(app.targets.size > 0) {
+                        app.targets.keys.map { " " + it }.reduce { a, b -> a + b }.let { "Targets: ${it}" }
                     }
-                }
-                else
-                {
-                    message = "No targets."
-                }
-                sender.sendMessage(message);
+                    else {
+                        "No targets."
+                    }
+                )
                 true
             }
         ),
         CommandSpecifier(
-            arrayOf("give"), arrayOf(CommandArgumentType.STRING), {
-                sender, _ ->
-                if(sender is Player)
-                {
-                    if(!giveCompass(sender))
-                    {
+            arrayOf("give"), arrayOf(CommandArgumentType.STRING), { sender, _
+                -> if(sender is Player) {
+                    if(!sender.giveCompass()) {
                         errYouHaveCompass(sender)
                     }
-                    else
-                    {
+                    else {
                         sucGaveCompassSelf(sender)
                     }
                 }
-                else
-                {
+                else {
                     errYouNotPlayer(sender)
                 }
-                true
             }, arrayOf(PERM_GIVE_SELF)
         ),
         CommandSpecifier(
-            arrayOf("give"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), {
-                sender, args ->
-                val targetName = args[1]
-                if(targetName is String)
-                {
-                    val player = app.server.getPlayerExact(targetName)
-                    if(player == null)
-                    {
-                        errPlayerDoesNotExist(sender, targetName)
+            arrayOf("give"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
+                -> (args[1] as String).let { targetName
+                    -> app.server.getPlayerExact(targetName)?.let { player
+                        -> if(!player.giveCompass()) {
+                            errTargetHasCompass(sender, targetName)
+                        }
+                        else {
+                            sucGaveCompass(sender, targetName)
+                        }
                     }
-                    else if(!giveCompass(player))
-                    {
-                        errTargetHasCompass(sender, targetName)
-                    }
-                    else
-                    {
-                        sucGaveCompass(sender, targetName)
-                    }
+                    ?: errPlayerDoesNotExist(sender, targetName)
                 }
-                true
             }, arrayOf(PERM_GIVE_ANY)
         ),
         CommandSpecifier(
-            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), {
-                sender, args ->
-                if(sender is Player)
-                {
-                    val environment = sender.location.world?.environment
-                    val enabled = args[1]
-                    if(environment is World.Environment && enabled is Boolean)
-                    {
-                        app.setEnvironment(environment, enabled)
-                        sucSetEnvironment(sender, environment, enabled)
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), { sender, args
+                -> (args[1] as Boolean).let { enabled
+                    -> if(sender is Player) {
+                        sender.location.world?.environment?.let { env
+                            -> app.setEnvironment(env, enabled)
+                            sucSetEnvironment(sender, env, enabled)
+                        }
+                        ?: errIndeterminableEnvironment(sender)
+                    }
+                    else {
+                        errYouNotPlayer(sender)
                     }
                 }
-                else
-                {
+            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
+        ),
+        CommandSpecifier(
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN, CommandArgumentType.ENVIRONMENT), { sender, args
+                -> (args[1] as Boolean).let { enabled
+                    -> (args[2] as World.Environment).let { env
+                        -> app.setEnvironment(env, enabled)
+                        sucSetEnvironment(sender, env, enabled)
+                    }
+                }
+            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
+        ),
+        CommandSpecifier(
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.ENVIRONMENT, CommandArgumentType.BOOLEAN), { sender, args
+                -> (args[2] as Boolean).let { enabled
+                    -> (args[1] as World.Environment).let { env
+                        -> app.setEnvironment(env, enabled)
+                        sucSetEnvironment(sender, env, enabled)
+                    }
+                }
+            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
+        ),
+        CommandSpecifier(
+            arrayOf("environmentlist"), arrayOf(CommandArgumentType.STRING), { sender, _
+                -> sender.sendMessage(
+                    if(app.permittedEnvironments.size > 0) {
+                        app.permittedEnvironments.map { " ${it}" }.reduce { a, b -> a + b }.let { "Trackable environments: ${it}" }
+                    }
+                    else {
+                        "No trackable environments."
+                    }
+                )
+                true
+            }
+        ),
+        CommandSpecifier(
+            arrayOf("who"), arrayOf(CommandArgumentType.STRING), { sender, _
+                -> if(sender is Player) {
+                    app.listeners.get(sender.name)?.targetName?.let { targetName
+                        -> sender.sendMessage("You are tracking \"${targetName}\".")
+                    }
+                    ?: sender.sendMessage("You are not tracking anyone.")
+                    true
+                }
+                else {
                     errYouNotPlayer(sender)
                 }
-                true
-            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
-        ),
-        CommandSpecifier(
-            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN, CommandArgumentType.ENVIRONMENT), {
-                sender, args ->
-                val environment = args[2]
-                val enabled = args[1]
-                if(environment is World.Environment && enabled is Boolean)
-                {
-                    app.setEnvironment(environment, enabled)
-                    sucSetEnvironment(sender, environment, enabled)
-                }
-                true
-            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
-        ),
-        CommandSpecifier(
-            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.ENVIRONMENT, CommandArgumentType.BOOLEAN), {
-                sender, args ->
-                val environment = args[1]
-                val enabled = args[2]
-                if(environment is World.Environment && enabled is Boolean)
-                {
-                    app.setEnvironment(environment, enabled)
-                    sucSetEnvironment(sender, environment, enabled)
-                }
-                true
-            }, arrayOf(PERM_MANAGE_ENVIRONMENT)
-        ),
-        CommandSpecifier(
-            arrayOf("environmentlist"), arrayOf(CommandArgumentType.STRING), {
-                sender, _ ->
-                var message: String
-                if(app.targets.size > 0)
-                {
-                    val envs = app.permittedEnvironments
-                    message = "Trackable environments: ${envs[0]}"
-                    for(i in 1..(envs.size - 1))
-                    {
-                        message += ", ${envs[i]}"
-                    }
-                }
-                else
-                {
-                    message = "No trackable environments."
-                }
-                sender.sendMessage(message);
-                true
             }
         ),
         CommandSpecifier(
-            arrayOf("who"), arrayOf(CommandArgumentType.STRING), {
-                sender, _ ->
-                if(sender is Player)
-                {
-                    val targetName = app.listeners.get(sender.name)?.targetName
-                    if(targetName != null)
-                    {
-                        sender.sendMessage("You are tracking \"${targetName}\".")
+            arrayOf("who"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
+                -> (args[1] as String).let { listenerName
+                    -> app.listeners.get(listenerName)?.targetName?.let { targetName
+                        -> sender.sendMessage("Player \"${listenerName}\" is tracking \"${targetName}\".")
                     }
-                    else
-                    {
-                        sender.sendMessage("You are not tracking anyone.")
-                    }
+                    ?: sender.sendMessage("Player \"${listenerName}\" is not tracking anyone.")
+                    true
                 }
-                else
-                {
-                    errYouNotPlayer(sender)
-                }
-                true
             }
         ),
         CommandSpecifier(
-            arrayOf("who"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), {
-                sender, args ->
-                val listenerName = args[1]
-                if(listenerName is String)
-                {
-                    val targetName = app.listeners.get(listenerName)?.targetName
-                    if(targetName != null)
-                    {
-                        sender.sendMessage("Player \"${listenerName}\" is tracking \"${targetName}\".")
-                    }
-                    else
-                    {
-                        sender.sendMessage("Player \"${listenerName}\" is not tracking anyone.")
-                    }
-                }
-                true
-            }
-        ),
-        CommandSpecifier(
-            arrayOf("track"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), {
-                sender, args ->
-                if(sender is Player)
-                {
-                    val targetName = args[1]
-                    if(targetName is String)
-                    {
-                        if(targetName in app.targets.keys)
-                        {
+            arrayOf("track"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
+                -> (args[1] as String).let { targetName
+                    -> if(sender is Player) {
+                        if(targetName in app.targets.keys) {
                             app.setTarget(sender.name, targetName)
                             sucNowTrackingSelf(sender, targetName)
                         }
-                        else
-                        {
+                        else {
                             errTargetDoesNotExist(sender, targetName)
                         }
                     }
-                }
-                else
-                {
-                    errYouNotPlayer(sender)
-                }
-                true
-            }
-        ),
-        CommandSpecifier(
-            arrayOf("track"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING, CommandArgumentType.STRING), {
-                sender, args ->
-                val targetName = args[1]
-                val listenerName = args[2]
-                if(targetName is String && listenerName is String)
-                {
-                    if(!playerExists(listenerName))
-                    {
-                        errPlayerDoesNotExist(sender, listenerName)
-                    }
-                    else if(targetName in app.targets.keys)
-                    {
-                        app.setTarget(listenerName, targetName)
-                        sucNowTracking(sender, targetName, listenerName)
-                    }
-                    else
-                    {
+                    else {
                         errTargetDoesNotExist(sender, targetName)
                     }
                 }
-                true
+            }
+        ),
+        CommandSpecifier(
+            arrayOf("track"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
+                -> (args[1] as String).let { targetName
+                    -> (args[2] as String).let { listenerName
+                        -> if(app.server.getPlayerExact(listenerName) != null) {
+                            if(targetName in app.targets.keys) {
+                                app.setTarget(listenerName, targetName)
+                                sucNowTracking(sender, targetName, listenerName)
+                            }
+                            else {
+                                errTargetDoesNotExist(sender, targetName)
+                            }
+                        }
+                        else {
+                            errPlayerDoesNotExist(sender, listenerName)
+                        }
+                    }
+                }
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("autogive"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), {
-                sender, args ->
-                val enabled = args[1]
-                if(enabled is Boolean)
-                {
-                    app.setAutoGive(enabled)
+            arrayOf("autogive"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), { sender, args
+                -> (args[1] as Boolean).let { enabled
+                    -> if(enabled) {
+                        app.server.onlinePlayers.forEach { it.giveCompass() }
+                    }
+                    app.autoGiveCompass = enabled
                     sucAutoGiveStatus(sender, enabled)
                 }
-                true
             }, arrayOf(PERM_MANAGE_AUTOGIVE)
         ),
         CommandSpecifier(
-            arrayOf("tickrate"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.INTEGER), {
-                sender, args ->
-                val ticks = args[1]
-                if(ticks is Int)
-                {
-                    val ticksLong = ticks.toLong()
-                    app.runUpdateTimer(ticksLong)
-                    sucChangeTickRate(sender, ticksLong)
+            arrayOf("tickrate"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.INTEGER), { sender, args
+                -> (args[1] as Int).toLong().let { ticks
+                    -> app.runUpdateTimer(ticks)
+                    sucChangeTickRate(sender, ticks)
                 }
-                true
             }, arrayOf(PERM_MANAGE_TICKRATE)
         ),
         CommandSpecifier(
-            arrayOf("autotarget"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), {
-                sender, args ->
-                val enabled = args[1]
-                if(enabled is Boolean)
-                {
-                    app.autoTarget = enabled
+            arrayOf("autotarget"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), { sender, args
+                -> (args[1] as Boolean).let { enabled
+                    -> app.autoTarget = enabled
                     sucAutoTargetStatus(sender, enabled)
                 }
-                true
             }, arrayOf(PERM_MANAGE_AUTOTARGET)
         )
     )
-    override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<String>): Boolean
-    {
+    override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<String>): Boolean {
         return inputCommand(commands, sender, args)
     }
     fun playerExists(targetName: String): Boolean {

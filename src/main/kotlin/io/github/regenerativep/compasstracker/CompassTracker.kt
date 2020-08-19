@@ -26,353 +26,272 @@ import net.md_5.bungee.api.chat.TextComponent;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 
 data class CompassListener(val name: String, var targetName: String?)
-data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location>)
+data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location> = mutableMapOf())
 val COMPASS_TAG_KEY = "TrackerDevice"
+const val UNKNOWN_TARGET = "unknown"
+const val COMMAND_NAME = "ctr"
 
 class CompassTrackerTask(val app: CompassTracker) : BukkitRunnable() {
-    override fun run()
-    {
-        for(listener in app.listeners.values)
-        {
-            val player = app.server.getPlayerExact(listener.name)
-            if(player == null) {
-                continue
+    override fun run() {
+        app.listeners.values.forEach { listener
+            -> app.server.getPlayerExact(listener.name)?.let { player
+                -> app.updatePlayer(player, listener)
             }
-            app.updatePlayer(player, listener)
         }
     }
 }
-fun isValidCompass(item: ItemStack?): Boolean
-{
-    if(item == null) {
-        return false
-    }
-    if(item.type != Material.COMPASS) {
-        return false
-    }
-    val nbti = NBTItem(item)
-    if(!nbti.hasKey(COMPASS_TAG_KEY)) {
-        return false
-    }
-    val status = nbti.getByte(COMPASS_TAG_KEY)?.toInt() ?: 0
-    return status == 1
-}
-fun getPlayerCompass(player: Player): ItemStack?
-{
-    if(isValidCompass(player.inventory.itemInOffHand)) {
-        return player.inventory.itemInOffHand
-    }
-    for(item in player.inventory)
-    {
-        if(isValidCompass(item)) {
-            return item
-        }
-    }
-    return null
-}
-fun getDimension(env: World.Environment?) = when(env) {
-    World.Environment.NORMAL -> "minecraft:overworld"
-    World.Environment.NETHER -> "minecraft:the_nether"
-    World.Environment.THE_END -> "minecraft:the_end"
-    else -> ""
-}
-fun createCompass(loc: Location?): ItemStack
-{
-    val nbti = NBTItem(ItemStack(Material.COMPASS))
-    nbti.setByte(COMPASS_TAG_KEY, 1)
-    if(loc == null)
-    {
-        nbti.setByte("LodestoneTracked", 1)
-    }
-    else
-    {
-        nbti.setByte("LodestoneTracked", 0)
-        val posComp = nbti.addCompound("LodestonePos")
-        posComp.setInteger("X", loc.blockX)
-        posComp.setInteger("Y", loc.blockY)
-        posComp.setInteger("Z", loc.blockZ)
-        val dimension = getDimension(loc.world?.environment)
-        nbti.setString("LodestoneDimension", dimension)
-    }
-    return nbti.item
-}
-fun setPlayerCompassTarget(player: Player, loc: Location?)
-{
-    val compass = getPlayerCompass(player)
-    if(compass == null) { return }
-    val item = createCompass(loc)
-    val invPos = player.inventory.first(compass)
-    if(invPos < 0) //if cannot find in inventory it *should* be in the off hand
-    {
-        player.inventory.setItemInOffHand(item)
-    }
-    else
-    {
-        player.inventory.setItem(invPos, item)
-    }
-}
-fun giveCompass(player: Player): Boolean
-{
-    //give player compass if player does not have compass
-    if(getPlayerCompass(player) == null)
-    {
-        player.inventory.addItem(createCompass(null))
-        return true
-    }
-    return false
-}
-class CompassTracker() : JavaPlugin(), Listener
-{
-    var permittedEnvironments: MutableList<World.Environment> = mutableListOf(World.Environment.NORMAL)
+class CompassTracker() : JavaPlugin(), Listener {
+    var permittedEnvironments: List<World.Environment> = listOf(World.Environment.NORMAL)
     var targets: MutableMap<String, TargetListener> = mutableMapOf<String, TargetListener>()
     var listeners: MutableMap<String, CompassListener> = mutableMapOf<String, CompassListener>()
     var updateTask: BukkitTask? = null
     var autoGiveCompass = true
     var autoTarget = false
     
-    override fun onEnable()
-    {
+    override fun onEnable() {
         runUpdateTimer(60)
-        getCommand("ctr")?.setExecutor(CommandListener(this))
+        getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this))
         server.pluginManager.registerEvents(this, this)
     }
-    override fun onDisable()
-    {
+    override fun onDisable() {
         updateTask?.cancel()
     }
-    fun runUpdateTimer(ticks: Long)
-    {
+    fun runUpdateTimer(ticks: Long) {
         updateTask?.cancel()
-        if(ticks > 0)
-        {
+        if(ticks > 0) {
             updateTask = CompassTrackerTask(this).runTaskTimer(this, 0, ticks)
         }
-        else
-        {
+        else {
             CompassTrackerTask(this).run()
         }
     }
-    fun updatePlayer(player: Player, listener: CompassListener)
-    {
-        val targetListener = targets.get(listener.targetName)
-        if(targetListener == null) {
-            return
-        }
-        val playerEnv = player.location.world?.environment
-        if(playerEnv !in permittedEnvironments) {
-            return
-        }
-        //ensure player environment is in the same as a possible location on the target
-        val targetLoc = targetListener.locationsMap.get(playerEnv)
-        setPlayerCompassTarget(player, targetLoc)
+    fun updatePlayer(player: Player, listener: CompassListener) {
+        this.targets.get(listener.targetName)?.let { targetListener
+            -> player.location.world?.let { world
+                -> if(world.environment in this.permittedEnvironments) {
+                    targetListener.locationsMap.get(world.environment)?.let { targetLoc
+                        -> player.updatePlayerCompassTarget(targetLoc)
+                    } ?: this.server.logger.info("oops! no location!")
+                }
+                else {
+                    this.server.logger.info("oops! illegal environment!")
+                }
+            } ?: this.server.logger.info("oops! no world!")
+        } ?: this.server.logger.info("oops! no target!")
     }
-    fun listenPlayer(playerName: String): CompassListener
-    {
-        val listener = CompassListener(playerName, null)
-        listeners.set(playerName, listener)
-        return listener
-    }
-    fun giveCompass(playerName: String): Boolean
-    {
-        val player = server.getPlayerExact(playerName)
-        if(player != null)
-        {
-            return giveCompass(player)
-        }
-        return false
-    }
-    fun sendTrackingMessage(playerName: String)
-    {
-        val player = server.getPlayerExact(playerName)
-        if(player == null) return
-        val listener = listeners.get(playerName)
-        val targetMessage = listener?.targetName ?: "unknown"
-        var message = TextComponent("Tracking \"")
-        message.setColor(ChatColor.YELLOW)
-        var infoMessage = TextComponent(targetMessage)
-        infoMessage.setColor(ChatColor.WHITE)
-        var endMessage = TextComponent("\"")
-        endMessage.setColor(ChatColor.YELLOW)
-        message.addExtra(infoMessage)
-        message.addExtra(endMessage)
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, message)
-    }
-    fun getNextTarget(targetName: String?): String?
-    {
-        var foundTarget = false
-        var nextTargetName: String? = null
-        var firstTargetName: String? = null
-        for(targetListener in targets.values)
-        {
-            if(firstTargetName == null)
-            {
-                firstTargetName = targetListener.name
-            }
-            if(targetListener.name == targetName)
-            {
-                foundTarget = true
-                continue
-            }
-            if(foundTarget)
-            {
-                nextTargetName = targetListener.name
-                break
+    fun sendTrackingMessage(playerName: String) {
+        this.server.getPlayerExact(playerName)?.let { player
+            -> this.listeners.get(playerName)?.let { listener
+                -> player.sendTrackingMessage(listener)
             }
         }
-        if(nextTargetName == null)
-        {
-            nextTargetName = firstTargetName
-        }
-        return nextTargetName
     }
-    fun setTarget(playerName: String, targetName: String?)
-    {
-        var listener = listeners.get(playerName)
-        if(listener == null)
-        {
-            listener = listenPlayer(playerName)
+    fun getNextTarget(targetName: String?): String? {
+        return this.targets.keys.toList().let { keyList
+            -> if(keyList.size == 0) {
+                null
+            }
+            else {
+                ( (keyList.indexOf(targetName) + 1) % keyList.size).let { nextInd
+                    -> keyList.get(nextInd)
+                }
+            }
         }
-        listener.targetName = targetName
+    }
+    fun setTarget(playerName: String, targetName: String?) {
+        if(playerName !in this.listeners.keys) {
+            listeners.set(playerName, CompassListener(playerName, null))
+        }
+        listeners.get(playerName)?.let { listener
+            -> listener.targetName = targetName
+        }
         sendTrackingMessage(playerName)
     }
-    fun addTarget(targetName: String): Boolean
-    {
-        if(!targets.containsKey(targetName))
-        {
-            targets.set(targetName, TargetListener(targetName, mutableMapOf()))
-            return true
-        }
-        return false
-    }
-    fun removeTarget(targetName: String): Boolean
-    {
-        return targets.remove(targetName) != null
-    }
-    fun setEnvironment(env: World.Environment, enabled: Boolean): Boolean
-    {
-        if(enabled)
-        {
-            if(env !in permittedEnvironments)
-            {
-                permittedEnvironments.add(env)
-                return true
+    fun setEnvironment(env: World.Environment, enabled: Boolean): Boolean {
+        return this.permittedEnvironments.let { currentPerm
+            -> this.permittedEnvironments = if(enabled) {
+                currentPerm.allowEnvironment(env)
             }
-        }
-        else
-        {
-            if(env in permittedEnvironments)
-            {
-                permittedEnvironments.remove(env)
-                return true
+            else {
+                currentPerm.disallowEnvironment(env)
             }
-        }
-        return false
-    }
-    fun setAutoGive(enabled: Boolean)
-    {
-        if(enabled)
-        {
-            //give everyone a compass
-            for(player in server.onlinePlayers)
-            {
-                giveCompass(player)
-            }
-        }
-        autoGiveCompass = enabled
-    }
-    @EventHandler
-    fun onPlayerMove(event: PlayerMoveEvent)
-    {
-        val target = targets.get(event.player.name)
-        if(target != null)
-        {
-            val player = this.server.getPlayerExact(target.name)
-            val location = player?.location
-            val env = location?.world?.environment
-            if(env != null)
-            {
-                target.locationsMap.put(env, location)
-            }
+            this.permittedEnvironments.size != currentPerm.size
         }
     }
     @EventHandler
-    fun onPlayerJoin(event: PlayerJoinEvent)
-    {
-        val playerName = event.player.name
-        if(playerName !in listeners.keys)
-        {
-            listenPlayer(playerName)
-        }
-        if(autoGiveCompass)
-        {
-            giveCompass(event.player)
-        }
-        if(autoTarget)
-        {
-            addTarget(playerName)
-        }
-    }
-    @EventHandler
-    fun onPlayerDeath(event: PlayerDeathEvent)
-    {
-        if(autoGiveCompass)
-        {
-            val drops = event.drops
-            //remove compass on death
-            for(i in 0..(drops.size - 1))
-            {
-                val drop = drops.get(i)
-                if(isValidCompass(drop))
-                {
-                    drops.removeAt(i)
-                    break
+    fun onPlayerMove(event: PlayerMoveEvent) {
+        this.targets.get(event.player.name)?.let { target
+            -> this.server.getPlayerExact(target.name)?.location?.let { location
+                -> location.world?.environment?.let { env
+                    -> target.locationsMap.put(env, location)
                 }
             }
         }
     }
     @EventHandler
-    fun onPlayerRespawn(event: PlayerRespawnEvent)
-    {
-        if(autoGiveCompass)
-        {
-            giveCompass(event.player)
-        }
-    }
-    @EventHandler
-    fun onPlayerItemHeld(event: PlayerItemHeldEvent)
-    {
-        val player = event.player
-        val item = player.inventory.getItem(event.newSlot)
-        if(item != null && item.type == Material.COMPASS)
-        {
-            val name = player.name
-            val listener = listeners.get(name)
-            if(listener != null)
-            {
-                sendTrackingMessage(name)
+    fun onPlayerJoin(event: PlayerJoinEvent) {
+        event.player.name.let { playerName
+            -> if(playerName !in this.listeners.keys) {
+                this.listeners.set(playerName, CompassListener(playerName, null))
+            }
+            if(autoGiveCompass) {
+                event.player.giveCompass()
+            }
+            if(autoTarget && playerName !in this.targets.keys) {
+                this.targets.set(playerName, TargetListener(playerName))
             }
         }
     }
     @EventHandler
-    fun onPlayerInteract(event: PlayerInteractEvent)
-    {
-        if(event.action == Action.RIGHT_CLICK_AIR || event.action == Action.RIGHT_CLICK_BLOCK) {
-            val item = event.item
-            if(item != null && item.type == Material.COMPASS)
-            {
-                val listener = listeners.get(event.player.name)
-                setTarget(event.player.name, getNextTarget(listener?.targetName))
-            }
+    fun onPlayerDeath(event: PlayerDeathEvent) {
+        if(autoGiveCompass) {
+            event.drops.removeAll(event.drops.filter { it.isValidCompass() } )
         }
-        else if(event.action == Action.LEFT_CLICK_AIR || event.action == Action.LEFT_CLICK_BLOCK) {
-            val item = event.item
-            if(item != null && item.type == Material.COMPASS)
-            {
-                val listener = listeners.get(event.player.name)
-                if(listener != null) {
-                    updatePlayer(event.player, listener)
+    }
+    @EventHandler
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        if(autoGiveCompass) {
+            event.player.giveCompass()
+        }
+    }
+    @EventHandler
+    fun onPlayerItemHeld(event: PlayerItemHeldEvent) {
+        event.player.inventory.getItem(event.newSlot).let { item
+            -> if(item != null && item.type == Material.COMPASS) {
+                event.player.name.let { name
+                    -> if(this.listeners.get(name) != null) {
+                        this.sendTrackingMessage(name)
+                    }
                 }
             }
         }
     }
+    @EventHandler
+    fun onPlayerInteract(event: PlayerInteractEvent) {
+        event.item?.let { item
+            -> if(item.type == Material.COMPASS) {
+                if(event.action.isRightClick()) {
+                    this.setTarget(
+                        event.player.name,
+                        getNextTarget(
+                            this.listeners.get(event.player.name)?.targetName
+                        )
+                    )
+                }
+                else if(event.action.isLeftClick()) {
+                    this.listeners.get(event.player.name)?.let { listener
+                        -> updatePlayer(event.player, listener)
+                    }
+                }
+            }
+        }
+    }
+}
+fun World.Environment.getDimensionCode() = when(this) {
+    World.Environment.NORMAL -> "minecraft:overworld"
+    World.Environment.NETHER -> "minecraft:the_nether"
+    World.Environment.THE_END -> "minecraft:the_end"
+}
+fun createCompass(loc: Location?): ItemStack {
+    return NBTItem(ItemStack(Material.COMPASS)).let { nbti
+        -> nbti.setByte(COMPASS_TAG_KEY, 1)
+        if(loc == null) {
+            nbti.setByte("LodestoneTracked", 1)
+        }
+        else {
+            nbti.setByte("LodestoneTracked", 0)
+            nbti.addCompound("LodestonePos").let { posComp
+                -> posComp.setInteger("X", loc.blockX)
+                posComp.setInteger("Y", loc.blockY)
+                posComp.setInteger("Z", loc.blockZ)
+            }
+            nbti.setString(
+                "LodestoneDimension",
+                loc.world?.let { world -> world.environment.getDimensionCode() } ?: ""
+            )
+        }
+        nbti.item
+    }
+}
+fun ItemStack.isValidCompass(): Boolean {
+    return if(this.type == Material.COMPASS) {
+        NBTItem(this).let { nbti
+            -> if(!nbti.hasKey(COMPASS_TAG_KEY)) {
+                false
+            }
+            else {
+                (nbti.getByte(COMPASS_TAG_KEY)?.toInt() ?: 0) == 1
+            }
+        }
+    }
+    else {
+        false
+    }
+}
+fun Player.getPlayerCompass(): ItemStack? {
+    return if(this.inventory.itemInOffHand.isValidCompass()) {
+        return this.inventory.itemInOffHand
+    }
+    else {
+        this.inventory.find {
+            it?.isValidCompass() ?: false
+        }
+    }
+}
+fun Player.updatePlayerCompassTarget(loc: Location?) {
+    this.getPlayerCompass()?.let { compass
+        -> createCompass(loc).let { newCompass
+            -> this.inventory.first(compass).let { invPos
+                -> if(invPos < 0) { //*should be in off hand
+                    this.inventory.setItemInOffHand(newCompass)
+                }
+                else {
+                    this.inventory.setItem(invPos, newCompass)
+                }
+            }
+        }
+    } ?: this.sendMessage("oops! no player compass!")
+}
+fun Player.giveCompass(): Boolean {
+    //give player compass if player does not have compass
+    return (this.getPlayerCompass() == null).let { foundCompass
+        -> if(foundCompass) {
+            this.inventory.addItem(createCompass(null))
+        }
+        foundCompass
+    }
+}
+fun Player.sendTrackingMessage(listener: CompassListener?) {
+    val targetMessage = listener?.targetName ?: UNKNOWN_TARGET
+    var message = TextComponent("Tracking \"")
+    message.setColor(ChatColor.YELLOW)
+    var infoMessage = TextComponent(targetMessage)
+    infoMessage.setColor(ChatColor.WHITE)
+    var endMessage = TextComponent("\"")
+    endMessage.setColor(ChatColor.YELLOW)
+    message.addExtra(infoMessage)
+    message.addExtra(endMessage)
+    this.spigot().sendMessage(ChatMessageType.ACTION_BAR, message)
+}
+fun List<World.Environment>.allowEnvironment(env: World.Environment): List<World.Environment> {
+    return if(env !in this) {
+        this + env
+    }
+    else {
+        this
+    }
+}
+fun List<World.Environment>.disallowEnvironment(env: World.Environment): List<World.Environment> {
+    return if(env in this) {
+        this - env
+    }
+    else {
+        this
+    }
+}
+fun Action.isRightClick(): Boolean {
+    return this == Action.RIGHT_CLICK_AIR || this == Action.RIGHT_CLICK_BLOCK
+}
+fun Action.isLeftClick(): Boolean {
+    return this == Action.LEFT_CLICK_AIR || this == Action.LEFT_CLICK_BLOCK
 }
