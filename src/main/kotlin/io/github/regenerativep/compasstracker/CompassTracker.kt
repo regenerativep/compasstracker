@@ -71,13 +71,13 @@ class CompassTracker() : JavaPlugin(), Listener {
                 -> if(world.environment in this.permittedEnvironments) {
                     targetListener.locationsMap.get(world.environment)?.let { targetLoc
                         -> player.updatePlayerCompassTarget(targetLoc)
-                    } ?: this.server.logger.info("oops! no location!")
+                    }// ?: this.server.logger.info("oops! no location!")
                 }
-                else {
-                    this.server.logger.info("oops! illegal environment!")
-                }
-            } ?: this.server.logger.info("oops! no world!")
-        } ?: this.server.logger.info("oops! no target!")
+                // else {
+                //     this.server.logger.info("oops! illegal environment!")
+                // }
+            }// ?: this.server.logger.info("oops! no world!")
+        }// ?: this.server.logger.info("oops! no target!")
     }
     fun sendTrackingMessage(playerName: String) {
         this.server.getPlayerExact(playerName)?.let { player
@@ -192,10 +192,15 @@ fun World.Environment.getDimensionCode() = when(this) {
     World.Environment.NETHER -> "minecraft:the_nether"
     World.Environment.THE_END -> "minecraft:the_end"
 }
-fun createCompass(loc: Location?): ItemStack {
+fun createTrackingCompass(): NBTItem {
     return NBTItem(ItemStack(Material.COMPASS)).let { nbti
         -> nbti.setByte(COMPASS_TAG_KEY, 1)
-        if(loc == null) {
+        nbti
+    }
+}
+fun createLodestoneCompass(loc: Location?): ItemStack {
+    return createTrackingCompass().let { nbti
+        -> if(loc == null) {
             nbti.setByte("LodestoneTracked", 1)
         }
         else {
@@ -240,9 +245,15 @@ fun Player.getPlayerCompass(): ItemStack? {
 }
 fun Player.updatePlayerCompassTarget(loc: Location?) {
     this.getPlayerCompass()?.let { compass
-        -> createCompass(loc).let { newCompass
+        -> (if(loc?.world?.environment == World.Environment.NORMAL) {
+            this.setCompassTarget(loc)
+            createTrackingCompass().item
+        }
+        else {
+            createLodestoneCompass(loc)
+        }).let { newCompass
             -> this.inventory.first(compass).let { invPos
-                -> if(invPos < 0) { //*should be in off hand
+                -> if(invPos < 0) { // *should* be in off hand
                     this.inventory.setItemInOffHand(newCompass)
                 }
                 else {
@@ -250,13 +261,14 @@ fun Player.updatePlayerCompassTarget(loc: Location?) {
                 }
             }
         }
-    } ?: this.sendMessage("oops! no player compass!")
+
+    }// ?: this.sendMessage("oops! no player compass!")
 }
 fun Player.giveCompass(): Boolean {
     //give player compass if player does not have compass
     return (this.getPlayerCompass() == null).let { foundCompass
         -> if(foundCompass) {
-            this.inventory.addItem(createCompass(null))
+            this.inventory.addItem(createLodestoneCompass(null))
         }
         foundCompass
     }

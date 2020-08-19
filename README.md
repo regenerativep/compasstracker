@@ -61,6 +61,7 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 ## todo
 - use normal compasses instead of lodestone compasses in the overworld for backwards compatibility
+- dont allow tracking self
 - remember allowed environments
 - remember targets
 - clear targets
@@ -71,5 +72,3 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 - add intentional target location error
 - target/tracker teams; ex. team a can track anyone from team b or c, team b can track anyone from team a, team c cannot track anyone, etc
 - document code
-- make functions intended to work on specific structures/objects part of those structures/objects (move from static global to static object)
-- create a general player identifier structure for ease of grabbing player objects or names when you may have one or the other
