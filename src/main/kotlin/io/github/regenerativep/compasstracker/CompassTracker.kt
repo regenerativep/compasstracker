@@ -23,7 +23,9 @@ import org.bukkit.persistence.PersistentDataContainer;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
-import de.tr7zw.changeme.nbtapi.NBTItem;
+import org.bukkit.inventory.meta.CompassMeta;
+import org.bukkit.plugin.Plugin;
+// import de.tr7zw.changeme.nbtapi.NBTItem;
 
 data class CompassListener(val name: String, var targetName: String?)
 data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location> = mutableMapOf())
@@ -33,9 +35,9 @@ const val COMMAND_NAME = "ctr"
 
 class CompassTrackerTask(val app: CompassTracker) : BukkitRunnable() {
     override fun run() {
-        app.listeners.values.forEach { listener
-            -> app.server.getPlayerExact(listener.name)?.let { player
-                -> app.updatePlayer(player, listener)
+        app.listeners.values.forEach { listener ->
+            app.server.getPlayerExact(listener.name)?.let { player ->
+                app.updatePlayer(player, listener)
             }
         }
     }
@@ -67,23 +69,20 @@ class CompassTracker() : JavaPlugin(), Listener {
         }
     }
     fun updatePlayer(player: Player, listener: CompassListener) {
-        this.targets.get(listener.targetName)?.let { targetListener
-            -> player.location.world?.let { world
-                -> if(world.environment in this.permittedEnvironments) {
-                    targetListener.locationsMap.get(world.environment)?.let { targetLoc
-                        -> player.updatePlayerCompassTarget(targetLoc)
-                    }// ?: this.server.logger.info("oops! no location!")
+        this.targets.get(listener.targetName)?.let { targetListener ->
+            player.location.world?.let { world ->
+                if(world.environment in this.permittedEnvironments) {
+                    targetListener.locationsMap.get(world.environment)?.let { targetLoc ->
+                        player.updatePlayerCompassTarget(this, targetLoc)
+                    }
                 }
-                // else {
-                //     this.server.logger.info("oops! illegal environment!")
-                // }
-            }// ?: this.server.logger.info("oops! no world!")
-        }// ?: this.server.logger.info("oops! no target!")
+            }
+        }
     }
     fun sendTrackingMessage(playerName: String) {
-        this.server.getPlayerExact(playerName)?.let { player
-            -> this.listeners.get(playerName)?.let { listener
-                -> player.sendTrackingMessage(listener)
+        this.server.getPlayerExact(playerName)?.let { player ->
+            this.listeners.get(playerName)?.let { listener ->
+                player.sendTrackingMessage(listener)
             }
         }
     }
@@ -124,7 +123,7 @@ class CompassTracker() : JavaPlugin(), Listener {
                 this.listeners.set(playerName, CompassListener(playerName, null))
             }
             if(autoGiveCompass) {
-                event.player.giveCompass()
+                event.player.giveCompass(this)
             }
             if(autoTarget && playerName !in this.targets.keys) {
                 this.targets.set(playerName, TargetListener(playerName))
@@ -134,13 +133,13 @@ class CompassTracker() : JavaPlugin(), Listener {
     @EventHandler
     fun onPlayerDeath(event: PlayerDeathEvent) {
         if(autoGiveCompass) {
-            event.drops.removeAll(event.drops.filter { it.isValidCompass() } )
+            event.drops.removeAll(event.drops.filter { it.isValidCompass(this) } )
         }
     }
     @EventHandler
     fun onPlayerRespawn(event: PlayerRespawnEvent) {
         if(autoGiveCompass) {
-            event.player.giveCompass()
+            event.player.giveCompass(this)
         }
     }
     @EventHandler
@@ -224,68 +223,71 @@ fun World.Environment.getDimensionCode() = when(this) {
     World.Environment.NETHER -> "minecraft:the_nether"
     World.Environment.THE_END -> "minecraft:the_end"
 }
-fun createTrackingCompass(): NBTItem {
-    return NBTItem(ItemStack(Material.COMPASS)).let { nbti
-        -> nbti.setByte(COMPASS_TAG_KEY, 1)
-        nbti
-    }
+fun createTrackingCompass(plugin: Plugin): ItemStack {
+    var compass = ItemStack(Material.COMPASS)
+    var meta = compass.itemMeta
+    meta!!.persistentDataContainer.set(NamespacedKey(plugin, COMPASS_TAG_KEY), PersistentDataType.BYTE, 1)
+    compass.setItemMeta(meta)
+    return compass
 }
-fun createLodestoneCompass(loc: Location?): ItemStack {
-    return createTrackingCompass().let { nbti
-        -> if(loc == null) {
-            nbti.setByte("LodestoneTracked", 1)
-        }
-        else {
-            nbti.setByte("LodestoneTracked", 0)
-            nbti.addCompound("LodestonePos").let { posComp
-                -> posComp.setInteger("X", loc.blockX)
-                posComp.setInteger("Y", loc.blockY)
-                posComp.setInteger("Z", loc.blockZ)
-            }
-            nbti.setString(
-                "LodestoneDimension",
-                loc.world?.let { world -> world.environment.getDimensionCode() } ?: ""
-            )
-        }
-        nbti.item
-    }
-}
-fun ItemStack.isValidCompass(): Boolean {
-    return if(this.type == Material.COMPASS) {
-        NBTItem(this).let { nbti
-            -> if(!nbti.hasKey(COMPASS_TAG_KEY)) {
-                false
-            }
-            else {
-                (nbti.getByte(COMPASS_TAG_KEY)?.toInt() ?: 0) == 1
-            }
-        }
+fun createLodestoneCompass(plugin: Plugin, loc: Location?): ItemStack {
+    var compass = createTrackingCompass(plugin)
+    var meta = compass.itemMeta as CompassMeta
+    if(loc == null) {
+        meta.setLodestoneTracked(true)
     }
     else {
-        false
+        meta.setLodestoneTracked(false)
+        meta.setLodestone(loc)
     }
+    compass.setItemMeta(meta)
+    return compass // i guess this should just work??
+    // return createTrackingCompass().let { nbti
+    //     -> if(loc == null) {
+    //         nbti.setByte("LodestoneTracked", 1)
+    //     }
+    //     else {
+    //         nbti.setByte("LodestoneTracked", 0)
+    //         nbti.addCompound("LodestonePos").let { posComp
+    //             -> posComp.setInteger("X", loc.blockX)
+    //             posComp.setInteger("Y", loc.blockY)
+    //             posComp.setInteger("Z", loc.blockZ)
+    //         }
+    //         nbti.setString(
+    //             "LodestoneDimension",
+    //             loc.world?.let { world -> world.environment.getDimensionCode() } ?: ""
+    //         )
+    //     }
+    //     nbti.item
+    // }
 }
-fun Player.getPlayerCompass(): ItemStack? {
-    return if(this.inventory.itemInOffHand.isValidCompass()) {
+fun ItemStack.isValidCompass(plugin: Plugin): Boolean {
+    return this.type == Material.COMPASS && this.itemMeta?.persistentDataContainer?.let { container -> NamespacedKey(plugin, COMPASS_TAG_KEY).let { key ->
+        container.has(key, PersistentDataType.BYTE)
+            && container.get(key, PersistentDataType.BYTE) ?: 0 == 1.toByte()
+    }} ?: false
+}
+fun Player.getPlayerCompass(plugin: Plugin): ItemStack? {
+    return if(this.inventory.itemInOffHand.isValidCompass(plugin)) {
         return this.inventory.itemInOffHand
     }
     else {
         this.inventory.find {
-            it?.isValidCompass() ?: false
+            it?.isValidCompass(plugin) ?: false
         }
     }
 }
-fun Player.updatePlayerCompassTarget(loc: Location?) {
-    this.getPlayerCompass()?.let { compass
-        -> (if(loc?.world?.environment == World.Environment.NORMAL) {
+fun Player.updatePlayerCompassTarget(plugin: Plugin, loc: Location?) {
+    this.getPlayerCompass(plugin)?.let { compass ->
+        (if(loc?.world?.environment == World.Environment.NORMAL) {
             this.setCompassTarget(loc)
-            createTrackingCompass().item
+            createTrackingCompass(plugin)
         }
         else {
-            createLodestoneCompass(loc)
-        }).let { newCompass
-            -> this.inventory.first(compass).let { invPos
-                -> if(invPos < 0) { // *should* be in off hand
+            createLodestoneCompass(plugin, loc)
+        }).let { newCompass ->
+            this.inventory.first(compass).let { invPos ->
+                if(invPos < 0) { // *should* be in off hand
                     this.inventory.setItemInOffHand(newCompass)
                 }
                 else {
@@ -293,14 +295,13 @@ fun Player.updatePlayerCompassTarget(loc: Location?) {
                 }
             }
         }
-
     }// ?: this.sendMessage("oops! no player compass!")
 }
-fun Player.giveCompass(): Boolean {
+fun Player.giveCompass(plugin: Plugin): Boolean {
     //give player compass if player does not have compass
-    return (this.getPlayerCompass() == null).let { foundCompass
+    return (this.getPlayerCompass(plugin) == null).let { foundCompass
         -> if(foundCompass) {
-            this.inventory.addItem(createLodestoneCompass(null))
+            this.inventory.addItem(createLodestoneCompass(plugin, null))
         }
         foundCompass
     }

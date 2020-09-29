@@ -6,7 +6,7 @@
 
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
-  <version>1.7.0-pre2</version>
+  <version>1.7.0-pre3</version>
   <inceptionYear>2020</inceptionYear>
   <organization>
     <name>regenerativep</name>
@@ -35,11 +35,11 @@
       <id>spigot-repo</id>
       <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
     </repository>
-    <repository>
+    <!-- <repository>
       <id>codemc-repo</id>
       <url>https://repo.codemc.org/repository/maven-public/</url>
       <layout>default</layout>
-    </repository>
+    </repository> -->
   </repositories>
 
   <dependencies>
@@ -60,7 +60,7 @@
       <version>${bukkit.version}</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>de.tr7zw</groupId>
       <artifactId>item-nbt-api</artifactId>
       <version>2.5.0</version>
@@ -70,7 +70,7 @@
           <artifactId>functional-annotations</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
+    </dependency> -->
   </dependencies>
 
   <build>
@@ -88,7 +88,7 @@
         <filtering>false</filtering>
         <includes>
           <!-- <include>LICENSE</include> -->
-          <include>LICENSE_NBTAPI.txt</include>
+          <!-- <include>LICENSE_NBTAPI.txt</include> -->
           <include>README.md</include>
         </includes>
       </resource>
@@ -192,14 +192,14 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
+        <!-- <configuration>
           <relocations>
             <relocation>
               <pattern>de.tr7zw.changeme.nbtapi</pattern>
               <shadedPattern>de.tr7zw.regenerativep.compasstracker.nbtapi</shadedPattern>
             </relocation>
           </relocations>
-        </configuration>
+        </configuration> -->
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

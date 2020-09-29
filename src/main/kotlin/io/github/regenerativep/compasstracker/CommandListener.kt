@@ -117,12 +117,14 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
         CommandSpecifier(
             arrayOf("target"), arrayOf(CommandArgumentType.STRING), { sender, _
                 -> if(sender is Player) {
-                    app.targets.set(sender.name, TargetListener(sender.name))
                     if(sender.name in app.targets.keys) {
                         sucRetargetedSelf(sender)
                     }
                     else {
                         sucTargetedSelf(sender)
+                    }.let { res ->
+                        app.targets.set(sender.name, TargetListener(sender.name))
+                        res
                     }
                 }
                 else {
@@ -136,12 +138,14 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
                     -> if(!playerExists(targetName)) {
                         warnTargetNotInServer(sender, targetName)
                     }
-                    app.targets.set(targetName, TargetListener(targetName))
                     if(targetName in app.targets.keys) {
                         sucRetargetedPlayer(sender, targetName)
                     }
                     else {
                         sucTargetedPlayer(sender, targetName)
+                    }.let{ res ->
+                        app.targets.set(targetName, TargetListener(targetName))
+                        res
                     }
                 }
             }, arrayOf(PERM_MANAGE_TARGETS)
@@ -177,7 +181,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             arrayOf("targetlist"), arrayOf(CommandArgumentType.STRING), { sender, _
                 -> sender.sendMessage(
                     if(app.targets.size > 0) {
-                        app.targets.keys.map { " " + it }.reduce { a, b -> a + b }.let { "Targets: ${it}" }
+                        app.targets.keys.reduce { a, b -> a + ", " + b }.let { "Targets: ${it}" }
                     }
                     else {
                         "No targets."
@@ -189,7 +193,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
         CommandSpecifier(
             arrayOf("give"), arrayOf(CommandArgumentType.STRING), { sender, _
                 -> if(sender is Player) {
-                    if(!sender.giveCompass()) {
+                    if(!sender.giveCompass(app)) {
                         errYouHaveCompass(sender)
                     }
                     else {
@@ -205,7 +209,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             arrayOf("give"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
                 -> (args[1] as String).let { targetName
                     -> app.server.getPlayerExact(targetName)?.let { player
-                        -> if(!player.giveCompass()) {
+                        -> if(!player.giveCompass(app)) {
                             errTargetHasCompass(sender, targetName)
                         }
                         else {
@@ -332,7 +336,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             arrayOf("autogive"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), { sender, args
                 -> (args[1] as Boolean).let { enabled
                     -> if(enabled) {
-                        app.server.onlinePlayers.forEach { it.giveCompass() }
+                        app.server.onlinePlayers.forEach { it.giveCompass(app) }
                     }
                     app.autoGiveCompass = enabled
                     sucAutoGiveStatus(sender, enabled)
