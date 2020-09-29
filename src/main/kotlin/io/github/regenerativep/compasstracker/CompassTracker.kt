@@ -25,7 +25,6 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.plugin.Plugin;
-// import de.tr7zw.changeme.nbtapi.NBTItem;
 
 data class CompassListener(val name: String, var targetName: String?)
 data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location> = mutableMapOf())
@@ -50,19 +49,24 @@ class CompassTracker() : JavaPlugin(), Listener {
     var autoGiveCompass = true
     var autoTarget = false
     var allowTargetSelf = false
+
+    val lodestoneCompassesUsable = canUseLodestoneCompasses()
     
     override fun onEnable() {
-        runUpdateTimer(60)
-        getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this))
-        server.pluginManager.registerEvents(this, this)
+        this.runUpdateTimer(60)
+        this.getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this))
+        this.server.pluginManager.registerEvents(this, this)
+        if(!this.lodestoneCompassesUsable) {
+            this.logger.info("Warning: This server is detected to be a version before 1.16 . Tracking outside of the overworld will not work.")
+        }
     }
     override fun onDisable() {
-        updateTask?.cancel()
+        this.updateTask?.cancel()
     }
     fun runUpdateTimer(ticks: Long) {
-        updateTask?.cancel()
+        this.updateTask?.cancel()
         if(ticks > 0) {
-            updateTask = CompassTrackerTask(this).runTaskTimer(this, 0, ticks)
+            this.updateTask = CompassTrackerTask(this).runTaskTimer(this, 0, ticks)
         }
         else {
             CompassTrackerTask(this).run()
@@ -90,14 +94,14 @@ class CompassTracker() : JavaPlugin(), Listener {
         if(playerName !in this.listeners.keys) {
             listeners.set(playerName, CompassListener(playerName, null))
         }
-        listeners.get(playerName)?.let { listener
-            -> listener.targetName = targetName
+        listeners.get(playerName)?.let { listener ->
+            listener.targetName = targetName
         }
         sendTrackingMessage(playerName)
     }
     fun setEnvironment(env: World.Environment, enabled: Boolean): Boolean {
-        return this.permittedEnvironments.let { currentPerm
-            -> this.permittedEnvironments = if(enabled) {
+        return this.permittedEnvironments.let { currentPerm ->
+            this.permittedEnvironments = if(enabled) {
                 currentPerm.allowEnvironment(env)
             }
             else {
@@ -108,18 +112,18 @@ class CompassTracker() : JavaPlugin(), Listener {
     }
     @EventHandler
     fun onPlayerMove(event: PlayerMoveEvent) {
-        this.targets.get(event.player.name)?.let { target
-            -> this.server.getPlayerExact(target.name)?.location?.let { location
-                -> location.world?.environment?.let { env
-                    -> target.locationsMap.put(env, location)
+        this.targets.get(event.player.name)?.let { target ->
+            this.server.getPlayerExact(target.name)?.location?.let { location ->
+                location.world?.environment?.let { env ->
+                    target.locationsMap.put(env, location)
                 }
             }
         }
     }
     @EventHandler
     fun onPlayerJoin(event: PlayerJoinEvent) {
-        event.player.name.let { playerName
-            -> if(playerName !in this.listeners.keys) {
+        event.player.name.let { playerName ->
+            if(playerName !in this.listeners.keys) {
                 this.listeners.set(playerName, CompassListener(playerName, null))
             }
             if(autoGiveCompass) {
@@ -144,10 +148,10 @@ class CompassTracker() : JavaPlugin(), Listener {
     }
     @EventHandler
     fun onPlayerItemHeld(event: PlayerItemHeldEvent) {
-        event.player.inventory.getItem(event.newSlot).let { item
-            -> if(item != null && item.type == Material.COMPASS) {
-                event.player.name.let { name
-                    -> if(this.listeners.get(name) != null) {
+        event.player.inventory.getItem(event.newSlot).let { item ->
+            if(item != null && item.type == Material.COMPASS) {
+                event.player.name.let { name ->
+                    if(this.listeners.get(name) != null) {
                         this.sendTrackingMessage(name)
                     }
                 }
@@ -156,8 +160,8 @@ class CompassTracker() : JavaPlugin(), Listener {
     }
     @EventHandler
     fun onPlayerInteract(event: PlayerInteractEvent) {
-        event.item?.let { item
-            -> if(item.type == Material.COMPASS) {
+        event.item?.let { item ->
+            if(item.type == Material.COMPASS) {
                 if(event.action.isRightClick()) {
                     this.setTarget(
                         event.player.name,
@@ -177,8 +181,8 @@ class CompassTracker() : JavaPlugin(), Listener {
                     )
                 }
                 else if(event.action.isLeftClick()) {
-                    this.listeners.get(event.player.name)?.let { listener
-                        -> updatePlayer(event.player, listener)
+                    this.listeners.get(event.player.name)?.let { listener ->
+                        updatePlayer(event.player, listener)
                     }
                 }
             }
@@ -193,8 +197,8 @@ fun getNextTarget(targetKeyList: List<String>, targetName: String?): String? {
         null
     }
     else {
-        ( (targetKeyList.indexOf(targetName) + 1) % targetKeyList.size).let { nextInd
-            -> targetKeyList.get(nextInd)
+        ( (targetKeyList.indexOf(targetName) + 1) % targetKeyList.size).let { nextInd ->
+            targetKeyList.get(nextInd)
         }
     }
 }
@@ -202,10 +206,10 @@ fun getNextTargetExcept(targets: MutableMap<String, TargetListener>, targetName:
     return getNextTargetExcept(targets.keys.toList(), targetName, exceptName)
 }
 fun getNextTargetExcept(targetKeyList: List<String>, targetName: String?, exceptName: String): String? {
-    return getNextTarget(targetKeyList, targetName)?.let { foundTarget
-        -> if(foundTarget == exceptName) {
-            getNextTarget(targetKeyList, foundTarget)?.let { secondFoundTarget
-                -> if(secondFoundTarget == exceptName) {
+    return getNextTarget(targetKeyList, targetName)?.let { foundTarget ->
+        if(foundTarget == exceptName) {
+            getNextTarget(targetKeyList, foundTarget)?.let { secondFoundTarget ->
+                if(secondFoundTarget == exceptName) {
                     null
                 }
                 else {
@@ -241,25 +245,7 @@ fun createLodestoneCompass(plugin: Plugin, loc: Location?): ItemStack {
         meta.setLodestone(loc)
     }
     compass.setItemMeta(meta)
-    return compass // i guess this should just work??
-    // return createTrackingCompass().let { nbti
-    //     -> if(loc == null) {
-    //         nbti.setByte("LodestoneTracked", 1)
-    //     }
-    //     else {
-    //         nbti.setByte("LodestoneTracked", 0)
-    //         nbti.addCompound("LodestonePos").let { posComp
-    //             -> posComp.setInteger("X", loc.blockX)
-    //             posComp.setInteger("Y", loc.blockY)
-    //             posComp.setInteger("Z", loc.blockZ)
-    //         }
-    //         nbti.setString(
-    //             "LodestoneDimension",
-    //             loc.world?.let { world -> world.environment.getDimensionCode() } ?: ""
-    //         )
-    //     }
-    //     nbti.item
-    // }
+    return compass
 }
 fun ItemStack.isValidCompass(plugin: Plugin): Boolean {
     return this.type == Material.COMPASS && this.itemMeta?.persistentDataContainer?.let { container -> NamespacedKey(plugin, COMPASS_TAG_KEY).let { key ->
@@ -284,14 +270,21 @@ fun Player.updatePlayerCompassTarget(plugin: Plugin, loc: Location?) {
             createTrackingCompass(plugin)
         }
         else {
-            createLodestoneCompass(plugin, loc)
+            if(canUseLodestoneCompasses()) {
+                createLodestoneCompass(plugin, loc)
+            }
+            else {
+                null
+            }
         }).let { newCompass ->
-            this.inventory.first(compass).let { invPos ->
-                if(invPos < 0) { // *should* be in off hand
-                    this.inventory.setItemInOffHand(newCompass)
-                }
-                else {
-                    this.inventory.setItem(invPos, newCompass)
+            if(newCompass != null) {
+                this.inventory.first(compass).let { invPos ->
+                    if(invPos < 0) { // *should* be in off hand
+                        this.inventory.setItemInOffHand(newCompass)
+                    }
+                    else {
+                        this.inventory.setItem(invPos, newCompass)
+                    }
                 }
             }
         }
@@ -299,9 +292,16 @@ fun Player.updatePlayerCompassTarget(plugin: Plugin, loc: Location?) {
 }
 fun Player.giveCompass(plugin: Plugin): Boolean {
     //give player compass if player does not have compass
-    return (this.getPlayerCompass(plugin) == null).let { foundCompass
-        -> if(foundCompass) {
-            this.inventory.addItem(createLodestoneCompass(plugin, null))
+    return (this.getPlayerCompass(plugin) == null).let { foundCompass ->
+        if(foundCompass) {
+            this.inventory.addItem(
+                if(this.location.world?.environment == World.Environment.NORMAL || !canUseLodestoneCompasses()) {
+                    createTrackingCompass(plugin)
+                }
+                else {
+                    createLodestoneCompass(plugin, null)
+                }
+            )
         }
         foundCompass
     }
@@ -339,4 +339,10 @@ fun Action.isRightClick(): Boolean {
 }
 fun Action.isLeftClick(): Boolean {
     return this == Action.LEFT_CLICK_AIR || this == Action.LEFT_CLICK_BLOCK
+}
+fun getVersion(): String {
+    return org.bukkit.Bukkit.getVersion().split(": ").get(1).let { it.substring(0, it.length - 1) }
+}
+fun canUseLodestoneCompasses(): Boolean {
+    return getVersion().let { version -> version.substring(0, 2) == "1." && version.substring(2, 4).toInt() >= 16 }
 }

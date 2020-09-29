@@ -3,7 +3,7 @@ name: maven-name
 author: maven-authors
 version: maven-version
 description: Have you compass point to a player or a location.
-api-version: 1.16
+api-version: 1.15
 commands:
   ctr:
     description: does things related to the compass tracker
