@@ -76,7 +76,4 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 ## let me know if there is a better way to
 - detect left/right click. if you do something like right click on a button, compass tracker detects that and thinks you are trying to interact with the compass. id prefer side effects from interacting with the compass not to happen
-- change nbt values of an item. currently the item is just replaced with another item with the new desired nbt values whenever there needs to be an update. itd be nice if the animation when you pick up an item in your hand didnt happen
-- create lodestone compasses. itd be nice not to rely on a big library (NBTAPI) just for generating a single simple item
-- add licenses for dependencies in maven, specifically NBTAPI, to the compiled jars. i currently just have a copy of the license as a resource to be moved over to the jar during compilation
-- exclude dependencies of dependencies in maven, specifically NBTAPI's functional annotations since it isnt a required dependency for NBTAPI to function. i want to avoid putting GNU licenses in this project
+- directly change nbt values of an item. currently the item is just replaced with another item with the new desired nbt values whenever there needs to be an update. itd be nice if the animation when you pick up an item in your hand didnt happen
