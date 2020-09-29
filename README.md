@@ -4,7 +4,7 @@ Compass tracker plugin for Spigot servers
 The idea for this plugin comes from [Dream's manhunt videos](https://www.youtube.com/watch?v=3tH4dyOPZnY), however this is written in mind for my own manhunt events.
 The basic idea of this plugin, is that you have two groups of players in a Minecraft server: one is the trackers, and the other is the tracked, which I refer to as a target. There can be multiple trackers and multiple targets, and targets are also able to track other targets.
 
-This is tested to be backwards compatible with 1.15, and probably works with previous version. Compasses will only work in overworld pre-1.16 .
+This is tested to be backwards compatible with 1.15, and probably works with previous versions. Compasses will only work in overworld pre-1.16 .
 
 ## Basic use:
 If you are not given a compass automatically, use `/ctr give`.
@@ -65,11 +65,8 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 - document code
 - remember allowed environments
 - remember targets
-- ability to clear targets
 - ability to clear all tracker compasses
 - ability to give everyone tracker compass
-- on autotarget turn on, make everyone in server target
-- ability add everyone as targets
 
 ## potential additions
 - add intentional target location uncertainty

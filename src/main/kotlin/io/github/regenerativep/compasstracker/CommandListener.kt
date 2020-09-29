@@ -178,6 +178,40 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
+            arrayOf("targetall"), arrayOf(CommandArgumentType.STRING), { sender, args ->
+                val targetedPlayers = app.server.onlinePlayers.filter { it.name !in app.targets.keys }.map { it -> it.name }
+                targetedPlayers.forEach { name ->
+                    app.targets.set(name, TargetListener(name))
+                }
+                sender.sendMessage(
+                    if(targetedPlayers.size > 0) {
+                        targetedPlayers.reduce { a, b -> a + ", " + b }.let { "Targeted ${it}" }
+                    }
+                    else {
+                        "Did not target anyone new."
+                    }
+                )
+                true
+            }, arrayOf(PERM_MANAGE_TARGETS)
+        ),
+        CommandSpecifier(
+            arrayOf("cleartargets"), arrayOf(CommandArgumentType.STRING), { sender, args ->
+                val targetedPlayers = app.targets.keys
+                targetedPlayers.forEach { name ->
+                    app.targets.remove(name)
+                }
+                sender.sendMessage(
+                    if(targetedPlayers.size > 0) {
+                        targetedPlayers.reduce { a, b -> a + ", " + b }.let { "Removed ${it} from targets" }
+                    }
+                    else {
+                        "Did not remove any new targets."
+                    }
+                )
+                true
+            }, arrayOf(PERM_MANAGE_TARGETS)
+        ),
+        CommandSpecifier(
             arrayOf("targetlist"), arrayOf(CommandArgumentType.STRING), { sender, _
                 -> sender.sendMessage(
                     if(app.targets.size > 0) {
