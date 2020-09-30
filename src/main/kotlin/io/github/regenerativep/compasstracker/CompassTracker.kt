@@ -26,6 +26,8 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.plugin.Plugin;
 
+import io.github.regenerativep.commandmanager.toEnvironmentOrNull
+
 data class CompassListener(val name: String, var targetName: String?)
 data class TargetListener(val name: String, var locationsMap: MutableMap<World.Environment, Location> = mutableMapOf())
 val COMPASS_TAG_KEY = "TrackerDevice"
@@ -49,19 +51,32 @@ class CompassTracker() : JavaPlugin(), Listener {
     var autoGiveCompass = true
     var autoTarget = false
     var allowTargetSelf = false
-
-    val lodestoneCompassesUsable = canUseLodestoneCompasses()
     
     override fun onEnable() {
         this.runUpdateTimer(60)
         this.getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this, COMMAND_NAME))
         this.server.pluginManager.registerEvents(this, this)
-        if(!this.lodestoneCompassesUsable) {
+        if(!canUseLodestoneCompasses()) {
             this.logger.info("Warning: This server is detected to be a version before 1.16 . Tracking outside of the overworld will not work.")
+        }
+        val config = this.config;
+        config.options().copyDefaults(true)
+        this.saveConfig()
+        this.autoTarget = config.getBoolean("autoTarget")
+        this.allowTargetSelf = config.getBoolean("allowTargetSelf")
+        this.autoGiveCompass = config.getBoolean("autoGiveCompasss")
+        this.permittedEnvironments = config.getStringList("allowedEnvironments").let {
+            List(it.size, { i -> it.get(i).toEnvironmentOrNull() ?: World.Environment.NORMAL })
         }
     }
     override fun onDisable() {
         this.updateTask?.cancel()
+        val config = this.config
+        config.set("autoTarget", this.autoTarget)
+        config.set("allowTargetSelf", this.allowTargetSelf)
+        config.set("autoGiveCompass", this.autoGiveCompass)
+        config.set("allowedEnvironments", List(this.permittedEnvironments.size, { i -> this.permittedEnvironments.get(i).toString() } ))
+        this.saveConfig()
     }
     fun runUpdateTimer(ticks: Long) {
         this.updateTask?.cancel()

@@ -6,7 +6,7 @@
 
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
-  <version>1.7.0-pre4</version>
+  <version>1.7.0-pre5</version>
   <inceptionYear>2020</inceptionYear>
   <organization>
     <name>regenerativep</name>
@@ -81,6 +81,7 @@
         <filtering>false</filtering>
         <includes>
           <include>plugin.yml</include>
+          <include>config.yml</include>
         </includes>
       </resource>
       <resource>

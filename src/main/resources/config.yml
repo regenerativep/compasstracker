@@ -1,0 +1,6 @@
+autoTarget: false
+allowTargetSelf: false
+autoGiveCompass: false
+allowedEnvironments:
+- NORMAL
+- NETHER
