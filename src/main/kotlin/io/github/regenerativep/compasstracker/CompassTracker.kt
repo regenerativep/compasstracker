@@ -54,7 +54,7 @@ class CompassTracker() : JavaPlugin(), Listener {
     
     override fun onEnable() {
         this.runUpdateTimer(60)
-        this.getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this))
+        this.getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this, COMMAND_NAME))
         this.server.pluginManager.registerEvents(this, this)
         if(!this.lodestoneCompassesUsable) {
             this.logger.info("Warning: This server is detected to be a version before 1.16 . Tracking outside of the overworld will not work.")

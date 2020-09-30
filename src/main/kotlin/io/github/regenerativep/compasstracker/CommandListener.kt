@@ -112,7 +112,7 @@ fun sucAutoTargetStatus(sender: CommandSender, status: Boolean): Boolean {
     return true
 }
 
-class CommandListener(val app: CompassTracker) : CommandExecutor {
+class CommandListener(val app: CompassTracker, val cmdName: String) : CommandExecutor {
     val commands: List<CommandSpecifier> = listOf(
         CommandSpecifier(
             arrayOf("target"), arrayOf(CommandArgumentType.STRING), { sender, _
@@ -178,7 +178,7 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("targetall"), arrayOf(CommandArgumentType.STRING), { sender, args ->
+            arrayOf("targetall"), arrayOf(CommandArgumentType.STRING), { sender, _ ->
                 val targetedPlayers = app.server.onlinePlayers.filter { it.name !in app.targets.keys }.map { it -> it.name }
                 targetedPlayers.forEach { name ->
                     app.targets.set(name, TargetListener(name))
@@ -195,8 +195,8 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             }, arrayOf(PERM_MANAGE_TARGETS)
         ),
         CommandSpecifier(
-            arrayOf("cleartargets"), arrayOf(CommandArgumentType.STRING), { sender, args ->
-                val targetedPlayers = app.targets.keys
+            arrayOf("cleartargets"), arrayOf(CommandArgumentType.STRING), { sender, _ ->
+                val targetedPlayers = app.targets.keys.toTypedArray()
                 targetedPlayers.forEach { name ->
                     app.targets.remove(name)
                 }
@@ -225,8 +225,8 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             }
         ),
         CommandSpecifier(
-            arrayOf("give"), arrayOf(CommandArgumentType.STRING), { sender, _
-                -> if(sender is Player) {
+            arrayOf("give"), arrayOf(CommandArgumentType.STRING), { sender, _ ->
+                if(sender is Player) {
                     if(!sender.giveCompass(app)) {
                         errYouHaveCompass(sender)
                     }
@@ -240,18 +240,31 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
             }, arrayOf(PERM_GIVE_SELF)
         ),
         CommandSpecifier(
-            arrayOf("give"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args
-                -> (args[1] as String).let { targetName
-                    -> app.server.getPlayerExact(targetName)?.let { player
-                        -> if(!player.giveCompass(app)) {
+            arrayOf("give"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.STRING), { sender, args ->
+                (args[1] as String).let { targetName ->
+                    app.server.getPlayerExact(targetName)?.let { player ->
+                        if(!player.giveCompass(app)) {
                             errTargetHasCompass(sender, targetName)
                         }
                         else {
                             sucGaveCompass(sender, targetName)
                         }
-                    }
-                    ?: errPlayerDoesNotExist(sender, targetName)
+                    } ?: errPlayerDoesNotExist(sender, targetName)
                 }
+            }, arrayOf(PERM_GIVE_ANY)
+        ),
+        CommandSpecifier(
+            arrayOf("giveall"), arrayOf(CommandArgumentType.STRING), { sender, _ ->
+                val playersToGive = this.app.server.onlinePlayers.filter { player -> player.giveCompass(this.app) }.map { it.name }
+                sender.sendMessage("Success: " +
+                    if(playersToGive.size > 0) {
+                        playersToGive.reduce { a, b -> a + ", " + b }.let { "Gave compasses to ${it}" }
+                    }
+                    else {
+                        "Did not give anyone any compasses."
+                    }
+                )
+                true
             }, arrayOf(PERM_GIVE_ANY)
         ),
         CommandSpecifier(
@@ -395,9 +408,9 @@ class CommandListener(val app: CompassTracker) : CommandExecutor {
         )
     )
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<String>): Boolean {
-        return inputCommand(commands, sender, args)
+        return inputCommand(this.commands, sender, args, this.cmdName)
     }
     fun playerExists(targetName: String): Boolean {
-        return app.server.getPlayerExact(targetName) != null
+        return this.app.server.getPlayerExact(targetName) != null
     }
 }

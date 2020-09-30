@@ -20,11 +20,17 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 `/ctr give [player name]` Give the specified player a compass
 
+`/ctr giveall` Gives everyone a compass
+
 `/ctr target [target name]` Set the specified player as a target (Warning: You can add names not in the server.)
 
 `/ctr removetarget [target name]` Stop the specified player from being a target
 
 `/ctr targetlist` List the current targets
+
+`/ctr targetall` Targets all players currently in the server
+
+`/ctr cleartargets` Clears all targets
 
 `/ctr track [target name]` Track the specified target with your compass
 
@@ -65,8 +71,6 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 - document code
 - remember allowed environments
 - remember targets
-- ability to clear all tracker compasses
-- ability to give everyone tracker compass
 
 ## potential additions
 - add intentional target location uncertainty
