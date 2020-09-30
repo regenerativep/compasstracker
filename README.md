@@ -52,6 +52,8 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 `/ctr autotarget [boolean]` Sets if we automatically add players who join as a target. Default is false.
 
+`/ctr help` Lists all of the available commands
+
 ## Permissions
 `ctrack.give.self` Can give a compass to themself (default: everyone)
 
@@ -69,7 +71,6 @@ This plugin also works in the nether and the end with lodestone compasses! Use `
 
 ## todo
 - document code
-- remember allowed environments
 
 ## potential additions
 - remember targets
