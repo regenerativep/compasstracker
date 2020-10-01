@@ -6,7 +6,7 @@
 
   <groupId>io.github.regenerativep.compasstracker</groupId>
   <artifactId>compasstracker</artifactId>
-  <version>1.7.0-pre5</version>
+  <version>1.7.0</version>
   <inceptionYear>2020</inceptionYear>
   <organization>
     <name>regenerativep</name>
@@ -27,7 +27,7 @@
     <bukkitplugin.main>${project.groupId}.${bukkitplugin.name}</bukkitplugin.main>
     <bukkitplugin.authors>${project.organization.name}</bukkitplugin.authors>
 
-    <bukkit.version>1.16.1-R0.1-SNAPSHOT</bukkit.version>
+    <bukkit.version>1.16.3-R0.1-SNAPSHOT</bukkit.version>
   </properties>
 
   <repositories>
