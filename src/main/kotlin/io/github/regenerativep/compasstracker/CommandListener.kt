@@ -1,15 +1,15 @@
-package io.github.regenerativep.compasstracker;
+package io.github.regenerativep.compasstracker
 
-import io.github.regenerativep.commandmanager.CommandSpecifier;
-import io.github.regenerativep.commandmanager.CommandArgumentType;
-import io.github.regenerativep.commandmanager.inputCommand;
-import io.github.regenerativep.compasstracker.giveCompass;
+import io.github.regenerativep.commandmanager.CommandSpecifier
+import io.github.regenerativep.commandmanager.CommandArgumentType
+import io.github.regenerativep.commandmanager.inputCommand
+import io.github.regenerativep.compasstracker.giveCompass
 
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
+import org.bukkit.command.CommandSender
+import org.bukkit.command.Command
+import org.bukkit.command.CommandExecutor
+import org.bukkit.World
+import org.bukkit.entity.Player
 
 val PERM_GIVE_SELF = "ctrack.give.self"
 val PERM_GIVE_ANY = "ctrack.give"
