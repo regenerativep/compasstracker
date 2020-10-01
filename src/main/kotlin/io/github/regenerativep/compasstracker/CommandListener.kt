@@ -304,10 +304,10 @@ class CommandListener(val app: CompassTracker, val cmdName: String) : CommandExe
             }, arrayOf(PERM_MANAGE_ENVIRONMENT)
         ),
         CommandSpecifier(
-            arrayOf("environmentlist"), arrayOf(CommandArgumentType.STRING), { sender, _
-                -> sender.sendMessage(
+            arrayOf("environmentlist"), arrayOf(CommandArgumentType.STRING), { sender, _ ->
+                sender.sendMessage(
                     if(app.permittedEnvironments.size > 0) {
-                        app.permittedEnvironments.map { " ${it}" }.reduce { a, b -> a + ", " + b }.let { "Trackable environments: ${it}" }
+                        app.permittedEnvironments.map { it.toString() }.reduce { a, b -> a + ", " + b }.let { "Trackable environments: ${it}" }
                     }
                     else {
                         "No trackable environments."

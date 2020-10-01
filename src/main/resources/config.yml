@@ -3,4 +3,3 @@ allowTargetSelf: false
 autoGiveCompass: false
 allowedEnvironments:
 - NORMAL
-- NETHER
