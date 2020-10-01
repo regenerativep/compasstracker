@@ -33,6 +33,7 @@ data class TargetListener(val name: String, var locationsMap: MutableMap<World.E
 val COMPASS_TAG_KEY = "TrackerDevice"
 const val UNKNOWN_TARGET = "unknown"
 const val COMMAND_NAME = "ctr"
+const val PRE_116_VERSION_WARNING = "Warning: This server is detected to be a version before 1.16 . Tracking outside of the overworld will not work."
 
 class CompassTrackerTask(val app: CompassTracker) : BukkitRunnable() {
     override fun run() {
@@ -57,7 +58,7 @@ class CompassTracker() : JavaPlugin(), Listener {
         this.getCommand(COMMAND_NAME)?.setExecutor(CommandListener(this, COMMAND_NAME))
         this.server.pluginManager.registerEvents(this, this)
         if(!canUseLodestoneCompasses()) {
-            this.logger.info("Warning: This server is detected to be a version before 1.16 . Tracking outside of the overworld will not work.")
+            this.logger.info(PRE_116_VERSION_WARNING)
         }
         val config = this.config;
         config.options().copyDefaults(true)

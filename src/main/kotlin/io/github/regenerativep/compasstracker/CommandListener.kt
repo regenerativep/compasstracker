@@ -4,6 +4,7 @@ import io.github.regenerativep.commandmanager.CommandSpecifier
 import io.github.regenerativep.commandmanager.CommandArgumentType
 import io.github.regenerativep.commandmanager.inputCommand
 import io.github.regenerativep.compasstracker.giveCompass
+import io.github.regenerativep.compasstracker.PRE_116_VERSION_WARNING
 
 import org.bukkit.command.CommandSender
 import org.bukkit.command.Command
@@ -53,6 +54,10 @@ fun errIndeterminableEnvironment(sender: CommandSender): Boolean {
 }
 fun warnTargetNotInServer(sender: CommandSender, targetName: String): Boolean {
     sender.sendMessage("Warning: Target \"${targetName}\" is not in the server.")
+    return false
+}
+fun warnVersionPre116(sender: CommandSender): Boolean {
+    sender.sendMessage(PRE_116_VERSION_WARNING)
     return false
 }
 fun sucTargetedPlayer(sender: CommandSender, targetName: String): Boolean {
@@ -268,14 +273,16 @@ class CommandListener(val app: CompassTracker, val cmdName: String) : CommandExe
             }, arrayOf(PERM_GIVE_ANY)
         ),
         CommandSpecifier(
-            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), { sender, args
-                -> (args[1] as Boolean).let { enabled
-                    -> if(sender is Player) {
-                        sender.location.world?.environment?.let { env
-                            -> app.setEnvironment(env, enabled)
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN), { sender, args ->
+                (args[1] as Boolean).let { enabled ->
+                    if(sender is Player) {
+                        sender.location.world?.environment?.let { env ->
+                            app.setEnvironment(env, enabled)
+                            if(env != World.Environment.NORMAL && !canUseLodestoneCompasses()) {
+                                warnVersionPre116(sender)
+                            }
                             sucSetEnvironment(sender, env, enabled)
-                        }
-                        ?: errIndeterminableEnvironment(sender)
+                        } ?: errIndeterminableEnvironment(sender)
                     }
                     else {
                         errYouNotPlayer(sender)
@@ -284,20 +291,26 @@ class CommandListener(val app: CompassTracker, val cmdName: String) : CommandExe
             }, arrayOf(PERM_MANAGE_ENVIRONMENT)
         ),
         CommandSpecifier(
-            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN, CommandArgumentType.ENVIRONMENT), { sender, args
-                -> (args[1] as Boolean).let { enabled
-                    -> (args[2] as World.Environment).let { env
-                        -> app.setEnvironment(env, enabled)
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.BOOLEAN, CommandArgumentType.ENVIRONMENT), { sender, args ->
+                (args[1] as Boolean).let { enabled ->
+                    (args[2] as World.Environment).let { env ->
+                        app.setEnvironment(env, enabled)
+                        if(env != World.Environment.NORMAL && !canUseLodestoneCompasses()) {
+                            warnVersionPre116(sender)
+                        }
                         sucSetEnvironment(sender, env, enabled)
                     }
                 }
             }, arrayOf(PERM_MANAGE_ENVIRONMENT)
         ),
         CommandSpecifier(
-            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.ENVIRONMENT, CommandArgumentType.BOOLEAN), { sender, args
-                -> (args[2] as Boolean).let { enabled
-                    -> (args[1] as World.Environment).let { env
-                        -> app.setEnvironment(env, enabled)
+            arrayOf("environment"), arrayOf(CommandArgumentType.STRING, CommandArgumentType.ENVIRONMENT, CommandArgumentType.BOOLEAN), { sender, args ->
+                (args[2] as Boolean).let { enabled ->
+                    (args[1] as World.Environment).let { env ->
+                        app.setEnvironment(env, enabled)
+                        if(env != World.Environment.NORMAL && !canUseLodestoneCompasses()) {
+                            warnVersionPre116(sender)
+                        }
                         sucSetEnvironment(sender, env, enabled)
                     }
                 }
