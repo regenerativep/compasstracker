@@ -18,7 +18,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.jdkVersion>1.8</project.jdkVersion>
-    <kotlin.version>1.3.72</kotlin.version>
+    <kotlin.version>1.6.0</kotlin.version>
 
     <project.outputName>CompassTracker</project.outputName>
     <project.finalName>${project.outputName}-${project.version}</project.finalName>
